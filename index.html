@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Đặt Vé & Sơ Đồ Sân Khấu Hùng Vương</title>
+    <style>
+        :root {
+            --seat-size: 24px;
+            --seat-gap: 4px;
+            --color-text: #333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            padding-top: 280px; /* Nhường chỗ cho Control Panel cố định (đã tăng thêm khoảng trống) */
+            display: flex;
+            justify-content: center;
+        }
+
+        /* --- CONTROL PANEL --- */
+        .control-panel {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            z-index: 1000;
+            padding: 15px 30px;
+            border-bottom: 2px solid #eaeaea;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .panel-header h2 { margin: 0; color: #1a1a1a; font-size: 20px; }
+
+        .mode-switch {
+            display: flex;
+            gap: 20px;
+            background: #f8f9fa;
+            padding: 5px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .mode-switch label {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .mode-switch input[type="radio"] { display: none; }
+        .mode-switch input[type="radio"]:checked + span {
+            color: #d9702b;
+        }
+
+        /* Tools Sections */
+        .tools-section { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+        
+        /* Palette */
+        .palette, .legend { display: flex; gap: 15px; align-items: center; }
+        .color-swatch {
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; padding: 6px 12px;
+            border-radius: 20px; border: 2px solid transparent;
+            font-size: 13px; font-weight: bold;
+            transition: 0.2s;
+        }
+        .color-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
+        .color-swatch.active { border-color: #333; background: #f0f0f0; }
+
+        /* Admin Zone Tool */
+        .zone-color-tool { display: flex; gap: 10px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; }
+        .zone-color-tool select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; }
+        .zone-color-tool button { 
+            padding: 8px 15px; background: #333; color: white; border: none; 
+            border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+        .zone-color-tool button:hover { background: #555; }
+        .hint { font-size: 12px; color: #666; font-style: italic; margin-left: auto; }
+
+        /* Tier Manager Tool */
+        .tier-manager { display: flex; gap: 10px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; }
+        .tier-manager input[type="text"], .tier-manager input[type="number"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; width: 120px;}
+        .tier-manager input[type="color"] { width: 34px; height: 34px; border: none; cursor: pointer; border-radius: 6px; padding: 0; background: none;}
+        .tier-manager button { padding: 8px 15px; background: #2a9d8f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .tier-manager button:hover { background: #21867a; }
+
+        /* User Cart Tool */
+        .cart { display: flex; gap: 20px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; flex-grow: 1; }
+        .cart-info { font-size: 14px; flex-grow: 1; }
+        .cart-info span { font-weight: bold; color: #d9702b; }
+        .cart-total { font-size: 16px; }
+        .cart-total strong { color: #e63946; font-size: 20px; }
+        .btn-checkout { 
+            padding: 10px 25px; background: #e63946; color: white; border: none; 
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;
+        }
+        .btn-checkout:hover { background: #c12734; }
+
+
+        /* --- MAP WRAPPER --- */
+        .map-wrapper {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            max-width: 95vw;
+            margin-bottom: 50px;
+        }
+
+        .theater {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: max-content;
+            margin: 0 auto;
+        }
+
+        .stage-area {
+            width: 600px; height: 60px; border: 2px solid #333;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold; margin-bottom: 30px;
+            background: #fff; text-transform: uppercase;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        .section-title { font-size: 14px; font-weight: bold; margin: 20px 0 10px 0; color: #555; text-align: center; }
+
+        /* Layout Blocks */
+        .floor-plan { display: flex; justify-content: center; gap: 20px; }
+        .column { display: flex; flex-direction: column; gap: var(--seat-gap); }
+        .align-right { align-items: flex-end; }
+        .align-left { align-items: flex-start; }
+        .align-center { align-items: center; }
+        .row { display: flex; gap: var(--seat-gap); height: var(--seat-size); }
+
+        /* Khu giữa thẳng cột */
+        .middle-row { display: flex; justify-content: center; width: 100%; }
+        .half { display: flex; gap: var(--seat-gap); }
+        .left-half { justify-content: flex-end; width: 320px; }
+        .right-half { justify-content: flex-start; width: 320px; }
+        .center-aisle { width: 16px; flex-shrink: 0; }
+
+        #ground-far-left, #ground-far-right { margin-top: 200px; gap: 10px; }
+        .gap-top-large { margin-top: 30px; }
+
+        /* Seat Styling */
+        .seat {
+            width: var(--seat-size); height: var(--seat-size);
+            border: 1px solid #ccc; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8px; font-weight: bold;
+            transition: all 0.15s ease;
+            background: #fff; color: #ccc;
+            user-select: none; box-sizing: border-box;
+        }
+
+        .invisible { visibility: hidden; pointer-events: none; }
+
+        /* Dynamic Cursors based on Mode */
+        .mode-admin .seat:not(.invisible) { cursor: cell; }
+        .mode-user .seat:not(.invisible) { cursor: pointer; }
+
+        /* Cấm click vào ghế Chưa Bán trong chế độ User */
+        .mode-user .seat[data-tier="default"]:not(.invisible) { cursor: not-allowed; opacity: 0.5; }
+
+        .labels { font-size: 14px; font-weight: bold; justify-content: space-between; color: #000; }
+        .label-char { height: var(--seat-size); display: flex; align-items: center; justify-content: center; width: 20px; }
+
+        .divider {
+            width: 100%; height: 2px; background: #ccc; margin: 50px 0; position: relative;
+        }
+        .divider::after {
+            content: "TRÊN LẦU (Tổng cộng: 423 ghế)";
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            background: white; padding: 0 20px; font-weight: bold; color: #555;
+        }
+
+    </style>
+</head>
+<body class="mode-admin">
+
+<!-- CONTROL PANEL DUAL MODE -->
+<div class="control-panel">
+    <div class="panel-header">
+        <h2>HỆ THỐNG QUẢN LÝ SƠ ĐỒ GHẾ</h2>
+        <div class="mode-switch">
+            <label>
+                <input type="radio" name="mode" value="admin" checked onchange="switchMode('admin')"> 
+                <span>🛠 Thiết Lập Giá Vé</span>
+            </label>
+            <label>
+                <input type="radio" name="mode" value="user" onchange="switchMode('user')"> 
+                <span>🛒 Khách Mua Vé</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Admin Tools -->
+    <div id="admin-tools" class="tools-section">
+        <div class="palette" id="color-palette">
+            <!-- Rendered by JS -->
+        </div>
+        <div class="zone-color-tool">
+            <select id="zone-selector">
+                <option value="ground-wing-left">Trệt - Cánh Trái</option>
+                <option value="ground-middle">Trệt - Giữa</option>
+                <option value="ground-wing-right">Trệt - Cánh Phải</option>
+                <option value="ground-far-left">Trệt - VIP Rìa Trái</option>
+                <option value="ground-far-right">Trệt - VIP Rìa Phải</option>
+                <option value="balcony-wing-left">Lầu - Cánh Trái</option>
+                <option value="balcony-middle">Lầu - Giữa</option>
+                <option value="balcony-wing-right">Lầu - Cánh Phải</option>
+                <option value="all">-- TÔ MÀU TOÀN BỘ SÂN KHẤU --</option>
+            </select>
+            <button onclick="applyColorToZone()">Áp Dụng Màu</button>
+        </div>
+        
+        <div class="tier-manager">
+            <input type="text" id="new-tier-name" placeholder="Tên loại vé (VD: SVIP)">
+            <input type="number" id="new-tier-price" placeholder="Giá vé (VNĐ)">
+            <input type="color" id="new-tier-color" value="#8b5cf6" title="Chọn màu ghế">
+            <button onclick="addCustomTier()">+ Thêm Loại Mới</button>
+        </div>
+        
+        <div class="hint">💡 Mẹo: Bấm giữ chuột và quét qua các ghế để tô màu nhanh!</div>
+    </div>
+
+    <!-- User Tools -->
+    <div id="user-tools" class="tools-section" style="display: none;">
+        <div class="legend" id="price-legend">
+            <!-- Rendered by JS -->
+        </div>
+        <div class="cart">
+            <div class="cart-info">Ghế đang chọn: <span id="selected-list">Chưa chọn ghế</span></div>
+            <div class="cart-total">Tổng tiền: <strong id="total-price">0 đ</strong></div>
+            <button class="btn-checkout" onclick="checkout()">Thanh Toán</button>
+        </div>
+    </div>
+</div>
+
+<div class="map-wrapper">
+    <div class="theater" id="theater-map">
+        <div class="stage-area">Sân Khấu</div>
+        
+        <div class="section-title">TẦNG TRỆT (Tổng cộng: 710 ghế)</div>
+        
+        <!-- GROUND FLOOR -->
+        <div class="floor-plan">
+            <div id="ground-far-left" class="column align-right"></div>
+            <div id="ground-wing-left" class="column align-right"></div>
+            <div id="ground-labels-left" class="column labels"></div>
+            <div id="ground-middle" class="column align-center"></div>
+            <div id="ground-labels-right" class="column labels"></div>
+            <div id="ground-wing-right" class="column align-left"></div>
+            <div id="ground-far-right" class="column align-left"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- BALCONY (TRÊN LẦU) -->
+        <div class="floor-plan">
+            <div id="balcony-wing-left" class="column align-right"></div>
+            <div id="balcony-labels-left" class="column labels"></div>
+            <div id="balcony-middle" class="column align-center"></div>
+            <div id="balcony-labels-right" class="column labels"></div>
+            <div id="balcony-wing-right" class="column align-left"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. CẤU HÌNH DỮ LIỆU BẢNG MÀU / GIÁ VÉ ---
+    const ticketTiers = {
+        'vvip': { name: 'VVIP', price: 5000000, color: '#e63946', bg: '#ffe3e3' },
+        'vip': { name: 'VIP', price: 3000000, color: '#d9702b', bg: '#ffeedb' },
+        'ga1': { name: 'GA 1', price: 2000000, color: '#3a7ca5', bg: '#e3f0f7' },
+        'ga2': { name: 'GA 2', price: 1000000, color: '#2a9d8f', bg: '#e0f5f2' },
+        'regular': { name: 'Thường', price: 500000, color: '#9c89b8', bg: '#f2eefa' },
+        'default': { name: 'Chưa Bán', price: 0, color: '#cccccc', bg: '#ffffff' }
+    };
+
+    let currentMode = 'admin'; 
+    let activeAdminTier = 'vip'; // Màu đang chọn cầm bút vẽ
+    let selectedSeats = new Set(); // Giỏ hàng của User
+
+    // Sinh CSS động cho các màu ghế
+    let dynamicStyleElement = document.createElement('style');
+    document.head.appendChild(dynamicStyleElement);
+
+    function updateDynamicStyles() {
+        let dynamicStyles = '';
+        for (let key in ticketTiers) {
+            const t = ticketTiers[key];
+            dynamicStyles += `
+                /* Trạng thái bình thường hiển thị màu viền & chữ */
+                .seat[data-tier="${key}"] { border-color: ${t.color}; color: ${t.color}; }
+                
+                /* Admin Hover tô màu */
+                .mode-admin .seat[data-tier="${key}"]:hover:not(.invisible) { background-color: ${t.bg}; transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+                
+                /* User Hover */
+                .mode-user .seat[data-tier="${key}"]:not([data-tier="default"]):hover:not(.invisible) { background-color: ${t.bg}; transform: scale(1.2); }
+                
+                /* User Đã Chọn (Selected) */
+                .seat[data-tier="${key}"].selected { background-color: ${t.color}; color: #fff; transform: scale(1.15); border-color: ${t.color}; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 20; }
+            `;
+        }
+        dynamicStyleElement.innerHTML = dynamicStyles;
+    }
+    updateDynamicStyles();
+
+    function addCustomTier() {
+        const nameInput = document.getElementById('new-tier-name');
+        const priceInput = document.getElementById('new-tier-price');
+        const colorInput = document.getElementById('new-tier-color');
+        
+        const name = nameInput.value.trim();
+        const price = parseInt(priceInput.value);
+        const color = colorInput.value;
+        
+        if (!name || isNaN(price) || price < 0) {
+            alert("Vui lòng nhập Tên loại vé và Giá vé hợp lệ!");
+            return;
+        }
+
+        const key = 'custom_' + Date.now();
+        // Tạo mã màu nền nhạt (opacity 15%) từ hex color để làm màu hover
+        const bg = color + '26'; 
+        
+        ticketTiers[key] = { name, price, color, bg };
+        
+        // Reset form
+        nameInput.value = '';
+        priceInput.value = '';
+        
+        // Cập nhật giao diện
+        updateDynamicStyles();
+        initPanels();
+        
+        // Tự động chọn màu vừa tạo
+        const newSwatch = document.querySelector(`.color-swatch[data-key="${key}"]`);
+        if(newSwatch) setActiveTier(key, newSwatch);
+        
+        alert(`Đã thêm loại vé: ${name}`);
+    }
+
+    // --- 2. LOGIC TẠO BẢNG ĐIỀU KHIỂN UI ---
+    function formatCurrency(num) {
+        return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+    }
+
+    function initPanels() {
+        const paletteContainer = document.getElementById('color-palette');
+        const legendContainer = document.getElementById('price-legend');
+        
+        // Clear nội dung cũ trước khi render lại
+        paletteContainer.innerHTML = '';
+        legendContainer.innerHTML = '';
+        
+        for (let key in ticketTiers) {
+            const t = ticketTiers[key];
+            
+            // Build Admin Palette
+            const swatch = document.createElement('div');
+            swatch.className = `color-swatch ${key === activeAdminTier ? 'active' : ''}`;
+            swatch.dataset.key = key; // Lưu key để dễ select
+            swatch.onclick = () => setActiveTier(key, swatch);
+            swatch.innerHTML = `<div class="color-box" style="background-color: ${t.color}"></div> ${t.name} (${formatCurrency(t.price)})`;
+            paletteContainer.appendChild(swatch);
+
+            // Build User Legend
+            if (key !== 'default') {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'color-swatch';
+                legendItem.innerHTML = `<div class="color-box" style="background-color: ${t.color}"></div> ${t.name} - ${formatCurrency(t.price)}`;
+                legendContainer.appendChild(legendItem);
+            }
+        }
+    }
+
+    function setActiveTier(tierKey, element) {
+        activeAdminTier = tierKey;
+        document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.body.className = `mode-${mode}`;
+        
+        if (mode === 'admin') {
+            document.getElementById('admin-tools').style.display = 'flex';
+            document.getElementById('user-tools').style.display = 'none';
+        } else {
+            document.getElementById('admin-tools').style.display = 'none';
+            document.getElementById('user-tools').style.display = 'flex';
+        }
+    }
+
+
+    // --- 3. LOGIC TƯƠNG TÁC CHUỘT LÊN GHẾ ---
+    
+    // a. ADMIN: Tô màu dạng Drag (Giữ và kéo chuột)
+    let isPainting = false;
+    
+    document.addEventListener('mousedown', (e) => {
+        if (currentMode !== 'admin') return;
+        const seat = e.target.closest('.seat:not(.invisible)');
+        if (seat) {
+            isPainting = true;
+            paintSeat(seat);
+            e.preventDefault(); // Tránh bị bôi đen text khi kéo chuột
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (currentMode !== 'admin' || !isPainting) return;
+        const seat = e.target.closest('.seat:not(.invisible)');
+        if (seat) paintSeat(seat);
+    });
+
+    document.addEventListener('mouseup', () => { isPainting = false; });
+
+    function paintSeat(seat) {
+        seat.setAttribute('data-tier', activeAdminTier);
+        // Xoá trạng thái selected nếu Admin tô màu lại ghế đó
+        seat.classList.remove('selected');
+    }
+
+    // b. ADMIN: Tô màu toàn bộ Khu Vực
+    function applyColorToZone() {
+        const zoneId = document.getElementById('zone-selector').value;
+        if (zoneId === 'all') {
+            document.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat);
+        } else {
+            const container = document.getElementById(zoneId);
+            if(container) {
+                container.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat);
+            }
+        }
+    }
+
+    // c. USER: Click chọn ghế đưa vào giỏ hàng
+    document.addEventListener('click', (e) => {
+        if (currentMode !== 'user') return;
+        
+        const seat = e.target.closest('.seat:not(.invisible)');
+        if (!seat) return;
+
+        const tier = seat.getAttribute('data-tier');
+        if (tier === 'default') return; // Không cho click ghế Chưa Bán
+
+        const seatId = seat.textContent;
+
+        if (selectedSeats.has(seatId)) {
+            selectedSeats.delete(seatId);
+            seat.classList.remove('selected');
+        } else {
+            selectedSeats.add(seatId);
+            seat.classList.add('selected');
+        }
+
+        updateCart();
+    });
+
+    function updateCart() {
+        const listSpan = document.getElementById('selected-list');
+        const totalSpan = document.getElementById('total-price');
+        
+        if (selectedSeats.size === 0) {
+            listSpan.textContent = 'Chưa chọn ghế';
+            totalSpan.textContent = '0 đ';
+            return;
+        }
+
+        let total = 0;
+        let listArr = Array.from(selectedSeats);
+        listArr.sort(); // Sort tên ghế cho đẹp
+
+        listArr.forEach(seatId => {
+            // Tìm ghế trong DOM để lấy giá tương ứng
+            // Do content là tên ghế, ta tìm ngược lại. Mẹo nhanh: duyệt qua danh sách selected
+        });
+
+        // Tính tổng tiền chuẩn xác nhất dựa trên element
+        document.querySelectorAll('.seat.selected').forEach(seat => {
+            const tierKey = seat.getAttribute('data-tier');
+            total += ticketTiers[tierKey].price;
+        });
+
+        listSpan.textContent = listArr.join(', ');
+        totalSpan.textContent = formatCurrency(total);
+    }
+
+    function checkout() {
+        if(selectedSeats.size === 0) {
+            alert('Vui lòng chọn ít nhất 1 ghế trước khi thanh toán!');
+            return;
+        }
+        alert(`Đang chuyển hướng thanh toán...\nGhế: ${Array.from(selectedSeats).join(', ')}\nTổng: ${document.getElementById('total-price').textContent}`);
+    }
+
+
+    // --- 4. HỆ THỐNG RENDER SƠ ĐỒ GHẾ GỐC ---
+    // (Giữ nguyên thuật toán lưới để đảm bảo thẳng cột như yêu cầu trước)
+    function genOdd(start, end) { let arr = []; for (let i = start; i >= end; i -= 2) arr.push(i); return arr; }
+    function genEven(start, end) { let arr = []; for (let i = start; i <= end; i += 2) arr.push(i); return arr; }
+    function genOddCols(start, end, maxLeft, minRight) { let arr = []; for (let i = maxLeft; i >= minRight; i -= 2) { if (i <= start && i >= end) arr.push(i); else arr.push(0); } return arr; }
+    function genEvenCols(start, end, minLeft, maxRight) { let arr = []; for (let i = minLeft; i <= maxRight; i += 2) { if (i >= start && i <= end) arr.push(i); else arr.push(0); } return arr; }
+
+    const groundLabels = ['A','B','C','D','E','F','G','H','I','K','L', 'gap', 'M','N','O','P','Q','R','S'];
+    const groundLeftWing = [
+        { r: 'A', seats: genOddCols(39, 23, 45, 17) }, { r: 'B', seats: genOddCols(41, 23, 45, 17) }, { r: 'C', seats: genOddCols(41, 23, 45, 17) },
+        { r: 'D', seats: genOddCols(43, 23, 45, 17) }, { r: 'E', seats: genOddCols(43, 23, 45, 17) }, { r: 'F', seats: genOddCols(43, 23, 45, 17) },
+        { r: 'G', seats: genOddCols(43, 23, 45, 17) }, { r: 'H', seats: genOddCols(43, 23, 45, 17) }, { r: 'I', seats: genOddCols(43, 23, 45, 17) },
+        { r: 'K', seats: genOddCols(43, 23, 45, 17) }, { r: 'L', seats: genOddCols(43, 23, 45, 17) }, { r: 'gap' },
+        { r: 'M', seats: genOddCols(45, 23, 45, 17) }, { r: 'N', seats: genOddCols(45, 23, 45, 17) }, { r: 'O', seats: genOddCols(43, 23, 45, 17) },
+        { r: 'P', seats: genOddCols(39, 23, 45, 17) }, { r: 'Q', seats: genOddCols(27, 17, 45, 17) }, { r: 'R', seats: genOddCols(23, 17, 45, 17) }
+    ];
+    const groundMiddle = [
+        { r: 'A', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'B', left: genOdd(21, 1), right: genEven(2, 22) },
+        { r: 'C', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'D', left: genOdd(21, 1), right: genEven(2, 22) },
+        { r: 'E', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'F', left: genOdd(21, 1), right: genEven(2, 22) },
+        { r: 'G', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'H', left: genOdd(21, 1), right: genEven(2, 22) },
+        { r: 'I', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'K', left: genOdd(21, 1), right: genEven(2, 22) },
+        { r: 'L', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'gap' },
+        { r: 'M', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'N', left: genOdd(21, 1), right: genEven(2, 20) },
+        { r: 'O', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'P', left: genOdd(21, 1), right: genEven(2, 20) },
+        { r: 'Q', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'R', left: genOdd(15, 1), right: genEven(2, 14) },
+        { r: 'S', left: genOdd(15, 1), right: genEven(2, 14) }
+    ];
+    const groundRightWing = [
+        { r: 'A', seats: genEvenCols(22, 38, 16, 46) }, { r: 'B', seats: genEvenCols(24, 42, 16, 46) }, { r: 'C', seats: genEvenCols(22, 40, 16, 46) },
+        { r: 'D', seats: genEvenCols(24, 44, 16, 46) }, { r: 'E', seats: genEvenCols(22, 42, 16, 46) }, { r: 'F', seats: genEvenCols(24, 44, 16, 46) },
+        { r: 'G', seats: genEvenCols(22, 42, 16, 46) }, { r: 'H', seats: genEvenCols(24, 44, 16, 46) }, { r: 'I', seats: genEvenCols(22, 42, 16, 46) },
+        { r: 'K', seats: genEvenCols(24, 44, 16, 46) }, { r: 'L', seats: genEvenCols(22, 40, 16, 46) }, { r: 'gap' },
+        { r: 'M', seats: genEvenCols(24, 46, 16, 46) }, { r: 'N', seats: genEvenCols(22, 44, 16, 46) }, { r: 'O', seats: genEvenCols(24, 44, 16, 46) },
+        { r: 'P', seats: genEvenCols(22, 38, 16, 46) }, { r: 'Q', seats: genEvenCols(20, 28, 16, 46) }, { r: 'R', seats: genEvenCols(16, 22, 16, 46) }
+    ];
+    const farLeftBoxes = [
+        { r: 'M', seats: [0, 0, 0, 9] }, { r: 'M', seats: [0, 0, 15, 7] }, { r: 'M', seats: [0, 21, 13, 5] },
+        { r: 'M', seats: [0, 27, 19, 11] }, { r: 'M', seats: [0, 33, 25, 17] }, { r: 'M', seats: [0, 39, 31, 23] },
+        { r: 'M', seats: [47, 37, 29, 0] }, { r: 'M', seats: [55, 45, 35, 0] }, { r: 'M', seats: [0, 53, 43, 0] },
+        { r: 'M', seats: [0, 0, 51, 41] }, { r: 'M', seats: [0, 0, 0, 49] }   
+    ];
+    const farRightBoxes = [
+        { r: 'M', seats: [10, 0, 0, 0] }, { r: 'M', seats: [8, 16, 0, 0] }, { r: 'M', seats: [6, 14, 22, 0] },
+        { r: 'M', seats: [12, 20, 28, 0] }, { r: 'M', seats: [18, 26, 34, 0] }, { r: 'M', seats: [24, 32, 40, 0] },
+        { r: 'M', seats: [0, 30, 38, 48] }, { r: 'M', seats: [0, 36, 46, 56] }, { r: 'M', seats: [0, 44, 54, 0] },
+        { r: 'M', seats: [42, 52, 0, 0] }, { r: 'M', seats: [50, 0, 0, 0] }   
+    ];
+
+    const balconyLabels = ['A','B','C','D','E','F','G','H','I','K','L'];
+    const balconyLeftWing = [
+        { r: 'A', seats: genOddCols(33, 17, 39, 17) }, { r: 'B', seats: genOddCols(35, 17, 39, 17) }, { r: 'C', seats: genOddCols(37, 17, 39, 17) },
+        { r: 'D', seats: genOddCols(37, 17, 39, 17) }, { r: 'E', seats: genOddCols(39, 19, 39, 17) }, { r: 'F', seats: genOddCols(39, 19, 39, 17) },
+        { r: 'G', seats: genOddCols(39, 19, 39, 17) }, { r: 'H', seats: genOddCols(37, 19, 39, 17) }, { r: 'I', seats: genOddCols(35, 19, 39, 17) },
+        { r: 'K', seats: genOddCols(31, 21, 39, 17) }, { r: 'L', seats: genOddCols(27, 21, 39, 17) }
+    ];
+    const balconyMiddle = [
+        { r: 'A', left: genOdd(15, 1), right: genEven(2, 14) }, { r: 'B', left: genOdd(15, 1), right: genEven(2, 16) },
+        { r: 'C', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'D', left: genOdd(15, 1), right: genEven(2, 16) },
+        { r: 'E', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'F', left: genOdd(17, 1), right: genEven(2, 16) },
+        { r: 'G', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'H', left: genOdd(17, 1), right: genEven(2, 16) },
+        { r: 'I', left: genOdd(17, 1), right: genEven(2, 18) }, { r: 'K', left: genOdd(19, 1), right: genEven(2, 20) },
+        { r: 'L', left: genOdd(19, 1), right: genEven(2, 20) }
+    ];
+    const balconyRightWing = [
+        { r: 'A', seats: genEvenCols(16, 32, 16, 38) }, { r: 'B', seats: genEvenCols(18, 34, 16, 38) }, { r: 'C', seats: genEvenCols(18, 36, 16, 38) },
+        { r: 'D', seats: genEvenCols(18, 36, 16, 38) }, { r: 'E', seats: genEvenCols(18, 38, 16, 38) }, { r: 'F', seats: genEvenCols(18, 38, 16, 38) },
+        { r: 'G', seats: genEvenCols(18, 38, 16, 38) }, { r: 'H', seats: genEvenCols(18, 36, 16, 38) }, { r: 'I', seats: genEvenCols(20, 34, 16, 38) },
+        { r: 'K', seats: genEvenCols(22, 30, 16, 38) }, { r: 'L', seats: genEvenCols(22, 26, 16, 38) }
+    ];
+
+    // Render logic - Truyền Tier thay vì Class cứng
+    function renderWing(containerId, data, initialTier) {
+        const container = document.getElementById(containerId);
+        data.forEach(rowData => {
+            if (rowData.r === 'gap') {
+                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
+            }
+            const rowDiv = document.createElement('div'); rowDiv.className = 'row';
+            rowData.seats.forEach(num => {
+                const seat = document.createElement('div');
+                if (num === 0) { seat.className = `seat invisible`; } 
+                else {
+                    seat.className = `seat`;
+                    seat.setAttribute('data-tier', initialTier);
+                    seat.textContent = `${rowData.r}${num}`;
+                    seat.title = `Ghế ${rowData.r}${num}`;
+                }
+                rowDiv.appendChild(seat);
+            });
+            container.appendChild(rowDiv);
+        });
+    }
+
+    function renderMiddle(containerId, data, initialTier) {
+        const container = document.getElementById(containerId);
+        data.forEach(rowData => {
+            if (rowData.r === 'gap') {
+                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
+            }
+            const rowDiv = document.createElement('div'); rowDiv.className = 'row middle-row'; 
+            
+            const leftHalf = document.createElement('div'); leftHalf.className = 'half left-half';
+            rowData.left.forEach(num => {
+                const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier);
+                seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; leftHalf.appendChild(seat);
+            });
+
+            const centerAisle = document.createElement('div'); centerAisle.className = 'center-aisle';
+
+            const rightHalf = document.createElement('div'); rightHalf.className = 'half right-half';
+            rowData.right.forEach(num => {
+                const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier);
+                seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; rightHalf.appendChild(seat);
+            });
+            
+            rowDiv.appendChild(leftHalf); rowDiv.appendChild(centerAisle); rowDiv.appendChild(rightHalf); container.appendChild(rowDiv);
+        });
+    }
+
+    function renderLabels(containerId, labels) {
+        const container = document.getElementById(containerId);
+        labels.forEach(char => {
+            if (char === 'gap') {
+                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
+            }
+            const label = document.createElement('div'); label.className = 'label-char';
+            label.innerHTML = `<strong>${char}</strong>`; container.appendChild(label);
+        });
+    }
+
+    // Khởi tạo App
+    initPanels();
+    
+    // Khởi tạo ghế với một vài màu mặc định để làm mẫu
+    renderLabels('ground-labels-left', groundLabels);
+    renderLabels('ground-labels-right', groundLabels);
+    renderWing('ground-wing-left', groundLeftWing, 'vip');
+    renderMiddle('ground-middle', groundMiddle, 'ga1');
+    renderWing('ground-wing-right', groundRightWing, 'vip');
+    renderWing('ground-far-left', farLeftBoxes, 'ga2');
+    renderWing('ground-far-right', farRightBoxes, 'ga2');
+
+    renderLabels('balcony-labels-left', balconyLabels);
+    renderLabels('balcony-labels-right', balconyLabels);
+    renderWing('balcony-wing-left', balconyLeftWing, 'regular');
+    renderMiddle('balcony-middle', balconyMiddle, 'regular');
+    renderWing('balcony-wing-right', balconyRightWing, 'regular');
+
+</script>
+</body>
+</html>
