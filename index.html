@@ -303,19 +303,32 @@
         let dynamicStyles = '';
         for (let key in ticketTiers) {
             const t = ticketTiers[key];
-            dynamicStyles += `
-                /* Trạng thái bình thường hiển thị màu viền & chữ */
-                .seat[data-tier="${key}"] { border-color: ${t.color}; color: ${t.color}; }
-                
-                /* Admin Hover tô màu */
-                .mode-admin .seat[data-tier="${key}"]:hover:not(.invisible) { background-color: ${t.bg}; transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-                
-                /* User Hover */
-                .mode-user .seat[data-tier="${key}"]:not([data-tier="default"]):hover:not(.invisible) { background-color: ${t.bg}; transform: scale(1.2); }
-                
-                /* User Đã Chọn (Selected) */
-                .seat[data-tier="${key}"].selected { background-color: ${t.color}; color: #fff; transform: scale(1.15); border-color: ${t.color}; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 20; }
-            `;
+            if (key === 'default') {
+                dynamicStyles += `
+                    /* Ghế Chưa Bán (Default) */
+                    .seat[data-tier="default"] { background-color: #fff; border-color: #ccc; color: #ccc; }
+                    .mode-admin .seat[data-tier="default"]:hover:not(.invisible) { background-color: #f0f0f0; transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+                `;
+            } else {
+                dynamicStyles += `
+                    /* Đổ màu kín ghế (Background full color) */
+                    .seat[data-tier="${key}"] { background-color: ${t.color}; border-color: ${t.color}; color: #fff; }
+                    
+                    /* Admin Hover */
+                    .mode-admin .seat[data-tier="${key}"]:hover:not(.invisible) { filter: brightness(1.1); transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+                    
+                    /* User Hover */
+                    .mode-user .seat[data-tier="${key}"]:hover:not(.invisible) { filter: brightness(1.1); transform: scale(1.2); }
+                    
+                    /* User Đã Chọn (Selected) - Thêm viền nổi bật để nhận diện */
+                    .seat[data-tier="${key}"].selected { 
+                        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111; 
+                        transform: scale(1.2); 
+                        z-index: 20; 
+                        filter: brightness(0.9);
+                    }
+                `;
+            }
         }
         dynamicStyleElement.innerHTML = dynamicStyles;
     }
