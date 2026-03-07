@@ -66,7 +66,7 @@
         .tools-section { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
         
         /* Palette */
-        .palette, .legend { display: flex; gap: 15px; align-items: center; }
+        .palette, .legend { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .color-swatch {
             display: flex; align-items: center; gap: 8px;
             cursor: pointer; padding: 6px 12px;
@@ -185,6 +185,88 @@
             content: "TRÊN LẦU (Tổng cộng: 423 ghế)";
             position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
             background: white; padding: 0 20px; font-weight: bold; color: #555;
+        }
+
+        /* --- TỐI ƯU GIAO DIỆN MOBILE (RESPONSIVE) --- */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 180px; 
+            }
+            body.mode-user {
+                padding-bottom: 150px; /* Nhường chỗ cho giỏ hàng ở đáy */
+                padding-top: 130px;
+            }
+            .control-panel {
+                padding: 10px 15px;
+                max-height: 50vh;
+                overflow-y: auto;
+            }
+            .panel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .panel-header h2 {
+                font-size: 16px;
+            }
+            .mode-switch label {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            .tools-section {
+                gap: 10px;
+            }
+            .zone-color-tool {
+                border-left: none;
+                padding-left: 0;
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            .tier-manager {
+                border-left: none;
+                padding-left: 0;
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            .tier-manager input[type="text"] { width: calc(50% - 5px); }
+            .tier-manager input[type="number"] { width: calc(50% - 5px); }
+            .tier-manager button { width: 100%; margin-top: 5px; }
+            
+            /* User Cart - Ghim cố định dưới đáy màn hình trên Mobile */
+            .mode-user .cart {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #fff;
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
+                border-left: none;
+                padding: 10px 15px;
+                flex-direction: column;
+                align-items: stretch;
+                z-index: 1001;
+                gap: 10px;
+            }
+            .cart-info { text-align: center; font-size: 13px; margin-bottom: 0; }
+            .cart-total { text-align: center; margin-bottom: 0; }
+            .btn-checkout { padding: 12px; font-size: 16px; }
+
+            .map-wrapper {
+                padding: 10px;
+                margin-bottom: 0;
+                border-radius: 0;
+                box-shadow: none;
+                -webkit-overflow-scrolling: touch; /* Mượt mà trên iOS */
+            }
+            .stage-area {
+                width: 100%;
+                min-width: 300px;
+                font-size: 18px;
+            }
         }
 
     </style>
@@ -445,6 +527,28 @@
     });
 
     document.addEventListener('mouseup', () => { isPainting = false; });
+
+    // Hỗ trợ thao tác vuốt trên màn hình cảm ứng (Mobile/Tablet) để Admin tô màu
+    document.addEventListener('touchstart', (e) => {
+        if (currentMode !== 'admin') return;
+        const seat = e.target.closest('.seat:not(.invisible)');
+        if (seat) {
+            isPainting = true;
+            paintSeat(seat);
+        }
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (currentMode !== 'admin' || !isPainting) return;
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (element && element.classList.contains('seat') && !element.classList.contains('invisible')) {
+            paintSeat(element);
+            e.preventDefault(); // Chặn cuộn màn hình để dễ dàng vẽ màu hơn
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => { isPainting = false; });
 
     function paintSeat(seat) {
         seat.setAttribute('data-tier', activeAdminTier);
