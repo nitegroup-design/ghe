@@ -2,8 +2,9 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hệ Thống Đặt Vé & Sơ Đồ Sân Khấu Hùng Vương</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --seat-size: 24px;
@@ -16,12 +17,13 @@
             background-color: #f0f2f5;
             margin: 0;
             padding: 0;
-            padding-top: 280px; /* Nhường chỗ cho Control Panel cố định (đã tăng thêm khoảng trống) */
+            padding-top: 220px; 
             display: flex;
             justify-content: center;
+            transition: padding 0.3s;
         }
 
-        /* --- CONTROL PANEL --- */
+        /* --- CONTROL PANEL (TOP) --- */
         .control-panel {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -30,122 +32,139 @@
             z-index: 1000;
             padding: 15px 30px;
             border-bottom: 2px solid #eaeaea;
+            transition: all 0.3s ease;
         }
 
         .panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
         }
         .panel-header h2 { margin: 0; color: #1a1a1a; font-size: 20px; }
 
-        .mode-switch {
-            display: flex;
-            gap: 20px;
-            background: #f8f9fa;
-            padding: 5px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-        .mode-switch label {
+        .mobile-toggle-btn {
+            display: none; 
+            background: #2a9d8f;
+            color: white;
+            border: none;
             padding: 8px 15px;
-            cursor: pointer;
-            font-weight: bold;
             border-radius: 6px;
-            transition: 0.2s;
-        }
-        .mode-switch input[type="radio"] { display: none; }
-        .mode-switch input[type="radio"]:checked + span {
-            color: #d9702b;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
+        .panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .mode-switch {
+            display: flex; gap: 20px; background: #f8f9fa; padding: 5px; border-radius: 8px; border: 1px solid #ddd; width: fit-content;
+        }
+        .mode-switch label {
+            padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 6px; transition: 0.2s;
+        }
+        .mode-switch input[type="radio"] { display: none; }
+        .mode-switch input[type="radio"]:checked + span { color: #d9702b; }
+
         /* Tools Sections */
-        .tools-section { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+        .tools-section { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         
-        /* Palette */
-        .palette, .legend { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .palette, .legend { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .color-swatch {
             display: flex; align-items: center; gap: 8px;
             cursor: pointer; padding: 6px 12px;
             border-radius: 20px; border: 2px solid transparent;
-            font-size: 13px; font-weight: bold;
-            transition: 0.2s;
+            font-size: 13px; font-weight: bold; transition: 0.2s;
         }
         .color-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
         .color-swatch.active { border-color: #333; background: #f0f0f0; }
 
-        /* Admin Zone Tool */
         .zone-color-tool { display: flex; gap: 10px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; }
         .zone-color-tool select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; }
-        .zone-color-tool button { 
-            padding: 8px 15px; background: #333; color: white; border: none; 
-            border-radius: 6px; cursor: pointer; font-weight: bold;
-        }
-        .zone-color-tool button:hover { background: #555; }
-        .hint { font-size: 12px; color: #666; font-style: italic; margin-left: auto; }
-
+        .zone-color-tool button { padding: 8px 15px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
         /* Tier Manager Tool */
         .tier-manager { display: flex; gap: 10px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; }
         .tier-manager input[type="text"], .tier-manager input[type="number"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; outline: none; width: 120px;}
         .tier-manager input[type="color"] { width: 34px; height: 34px; border: none; cursor: pointer; border-radius: 6px; padding: 0; background: none;}
-        .tier-manager button { padding: 8px 15px; background: #2a9d8f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .tier-manager button:hover { background: #21867a; }
+        
+        .tier-actions { display: flex; gap: 5px; }
+        .btn-add-tier { padding: 8px 15px; background: #2a9d8f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-add-tier:hover { background: #21867a; }
+        .btn-edit-tier { padding: 8px 15px; background: #f4a261; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-edit-tier:hover { background: #e76f51; }
+        
+        /* Export Buttons */
+        .action-buttons { display: flex; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+        .export-btn { padding: 10px 15px; background: #333; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .export-btn:hover { background: #555; }
+        
+        .export-img-btn { padding: 10px 15px; background: #d9702b; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .export-img-btn:hover { background: #b85c21; }
+        
+        .export-excel-btn { padding: 10px 15px; background: #219ebc; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .export-excel-btn:hover { background: #126782; }
 
-        /* User Cart Tool */
-        .cart { display: flex; gap: 20px; align-items: center; border-left: 2px solid #eee; padding-left: 20px; flex-grow: 1; }
+        .import-excel-btn { padding: 10px 15px; background: #8e44ad; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .import-excel-btn:hover { background: #732d91; }
+
+        .import-code-btn { padding: 10px 15px; background: #4a4e69; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .import-code-btn:hover { background: #22223b; }
+
+        .hint { font-size: 12px; color: #666; font-style: italic; width: 100%; margin-top: -5px; }
+
+        /* --- TÍNH NĂNG LỊCH SỬ (UNDO/REDO) --- */
+        .draw-controls-group { display: flex; gap: 8px; align-items: center; }
+        .history-btn { padding: 0 12px; background: #fff; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: 36px; display: flex; align-items: center; justify-content: center; }
+        .history-btn:not(:disabled):hover { background: #f0f0f0; border-color: #999; }
+        .history-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+        .draw-toggle-btn { padding: 0 20px; height: 36px; background: #333; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); white-space: nowrap; }
+
+        /* --- CART BOTTOM BAR (USER MODE) --- */
+        .cart-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #fff;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            padding: 15px 30px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1001;
+            border-top: 3px solid #e63946;
+        }
         .cart-info { font-size: 14px; flex-grow: 1; }
         .cart-info span { font-weight: bold; color: #d9702b; }
-        .cart-total { font-size: 16px; }
-        .cart-total strong { color: #e63946; font-size: 20px; }
+        .cart-total { font-size: 16px; margin-right: 20px; }
+        .cart-total strong { color: #e63946; font-size: 22px; }
         .btn-checkout { 
-            padding: 10px 25px; background: #e63946; color: white; border: none; 
-            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;
+            padding: 12px 30px; background: #e63946; color: white; border: none; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;
+            text-transform: uppercase;
         }
         .btn-checkout:hover { background: #c12734; }
 
-
         /* --- MAP WRAPPER --- */
         .map-wrapper {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow-x: auto;
-            max-width: 95vw;
-            margin-bottom: 50px;
+            background: white; padding: 40px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow-x: auto;
+            max-width: 95vw; margin-bottom: 50px;
         }
 
-        .theater {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: max-content;
-            margin: 0 auto;
-        }
-
-        .stage-area {
-            width: 600px; height: 60px; border: 2px solid #333;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; margin-bottom: 30px;
-            background: #fff; text-transform: uppercase;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-radius: 10px;
-        }
-
+        .theater { display: flex; flex-direction: column; align-items: center; width: max-content; margin: 0 auto; }
+        .stage-area { width: 600px; height: 60px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin-bottom: 30px; background: #fff; text-transform: uppercase; border-radius: 10px; }
         .section-title { font-size: 14px; font-weight: bold; margin: 20px 0 10px 0; color: #555; text-align: center; }
 
-        /* Layout Blocks */
         .floor-plan { display: flex; justify-content: center; gap: 20px; }
         .column { display: flex; flex-direction: column; gap: var(--seat-gap); }
-        .align-right { align-items: flex-end; }
-        .align-left { align-items: flex-start; }
-        .align-center { align-items: center; }
+        .align-right { align-items: flex-end; } .align-left { align-items: flex-start; } .align-center { align-items: center; }
         .row { display: flex; gap: var(--seat-gap); height: var(--seat-size); }
 
-        /* Khu giữa thẳng cột */
         .middle-row { display: flex; justify-content: center; width: 100%; }
         .half { display: flex; gap: var(--seat-gap); }
         .left-half { justify-content: flex-end; width: 320px; }
@@ -158,176 +177,171 @@
         /* Seat Styling */
         .seat {
             width: var(--seat-size); height: var(--seat-size);
-            border: 1px solid #ccc; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 8px; font-weight: bold;
-            transition: all 0.15s ease;
-            background: #fff; color: #ccc;
-            user-select: none; box-sizing: border-box;
+            border: 1px solid #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            font-size: 8px; font-weight: bold; transition: all 0.15s ease;
+            background: #fff; color: #ccc; user-select: none; box-sizing: border-box;
         }
-
         .invisible { visibility: hidden; pointer-events: none; }
-
-        /* Dynamic Cursors based on Mode */
-        .mode-admin .seat:not(.invisible) { cursor: cell; }
+        
+        .mode-admin.drawing-enabled .seat:not(.invisible) { cursor: cell; }
+        .mode-admin:not(.drawing-enabled) .seat:not(.invisible) { cursor: default; }
+        
         .mode-user .seat:not(.invisible) { cursor: pointer; }
-
-        /* Cấm click vào ghế Chưa Bán trong chế độ User */
         .mode-user .seat[data-tier="default"]:not(.invisible) { cursor: not-allowed; opacity: 0.5; }
 
-        .labels { font-size: 14px; font-weight: bold; justify-content: space-between; color: #000; }
+        .labels { font-size: 14px; font-weight: bold; color: #000; }
         .label-char { height: var(--seat-size); display: flex; align-items: center; justify-content: center; width: 20px; }
 
-        .divider {
-            width: 100%; height: 2px; background: #ccc; margin: 50px 0; position: relative;
-        }
-        .divider::after {
-            content: "TRÊN LẦU (Tổng cộng: 423 ghế)";
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            background: white; padding: 0 20px; font-weight: bold; color: #555;
-        }
+        .divider { width: 100%; height: 2px; background: #ccc; margin: 50px 0; position: relative; }
+        .divider::after { content: "TRÊN LẦU (Tổng cộng: 423 ghế)"; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: white; padding: 0 20px; font-weight: bold; color: #555; }
 
-        /* --- TỐI ƯU GIAO DIỆN MOBILE (RESPONSIVE) --- */
+        /* --- EXPORT MODAL --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #fff; padding: 25px; border-radius: 12px; width: 90%; max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-box h3 { margin-top: 0; color: #e63946; }
+        .modal-box textarea { width: 100%; height: 150px; padding: 10px; font-family: monospace; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .modal-actions { margin-top: 15px; text-align: right; }
+
+        /* RESPONSIVE */
         @media (max-width: 768px) {
-            body {
-                padding-top: 180px; 
-            }
-            body.mode-user {
-                padding-bottom: 150px; /* Nhường chỗ cho giỏ hàng ở đáy */
-                padding-top: 130px;
-            }
-            .control-panel {
-                padding: 10px 15px;
-                max-height: 50vh;
-                overflow-y: auto;
-            }
-            .panel-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-            .panel-header h2 {
-                font-size: 16px;
-            }
-            .mode-switch label {
-                padding: 6px 10px;
-                font-size: 13px;
-            }
-            .tools-section {
-                gap: 10px;
-            }
-            .zone-color-tool {
-                border-left: none;
-                padding-left: 0;
-                width: 100%;
-                flex-wrap: wrap;
-            }
-            .tier-manager {
-                border-left: none;
-                padding-left: 0;
-                border-top: 1px solid #eee;
-                padding-top: 10px;
-                width: 100%;
-                flex-wrap: wrap;
-                justify-content: space-between;
-            }
-            .tier-manager input[type="text"] { width: calc(50% - 5px); }
-            .tier-manager input[type="number"] { width: calc(50% - 5px); }
-            .tier-manager button { width: 100%; margin-top: 5px; }
+            body { padding-top: 70px; }
+            body.mode-user { padding-bottom: 120px; }
+            .control-panel { padding: 10px 15px; max-height: 85vh; overflow-y: auto; }
+            .panel-header h2 { font-size: 15px; max-width: 65%; line-height: 1.2; }
+            .mobile-toggle-btn { display: block; }
+            .panel-content { display: none; border-top: 1px solid #eee; padding-top: 15px; }
+            .panel-content.show { display: flex; }
+            .mode-switch { width: 100%; justify-content: center; }
+            .tools-section { flex-direction: column; align-items: stretch; gap: 15px; }
             
-            /* User Cart - Ghim cố định dưới đáy màn hình trên Mobile */
-            .mode-user .cart {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: #fff;
-                box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
-                border-left: none;
-                padding: 10px 15px;
-                flex-direction: column;
-                align-items: stretch;
-                z-index: 1001;
-                gap: 10px;
-            }
-            .cart-info { text-align: center; font-size: 13px; margin-bottom: 0; }
-            .cart-total { text-align: center; margin-bottom: 0; }
-            .btn-checkout { padding: 12px; font-size: 16px; }
-
-            .map-wrapper {
-                padding: 10px;
-                margin-bottom: 0;
-                border-radius: 0;
-                box-shadow: none;
-                -webkit-overflow-scrolling: touch; /* Mượt mà trên iOS */
-            }
-            .stage-area {
-                width: 100%;
-                min-width: 300px;
-                font-size: 18px;
-            }
+            .action-buttons { flex-direction: column; width: 100%; margin-left: 0; }
+            .action-buttons button { width: 100%; }
+            
+            .palette, .legend { justify-content: flex-start; }
+            .zone-color-tool, .tier-manager { border-left: none; padding-left: 0; width: 100%; flex-wrap: wrap; justify-content: space-between; }
+            .zone-color-tool select { width: calc(100% - 130px); }
+            .tier-manager input[type="text"] { width: calc(60% - 5px); }
+            .tier-manager input[type="number"] { width: calc(40% - 5px); }
+            
+            .tier-actions { width: 100%; display: flex; gap: 10px; margin-top: 5px; }
+            .tier-actions button { flex: 1; }
+            
+            .map-wrapper { padding: 10px; border-radius: 0; box-shadow: none; margin-bottom: 0; }
+            .stage-area { width: 100%; min-width: 300px; font-size: 18px; }
+            .cart-bar { flex-direction: column; padding: 10px 15px; gap: 10px; text-align: center; }
+            .cart-info { font-size: 13px; }
+            .cart-total { margin-right: 0; margin-bottom: 5px; }
+            .cart-total strong { font-size: 18px; }
+            .btn-checkout { width: 100%; padding: 10px; font-size: 16px; }
         }
-
     </style>
 </head>
 <body class="mode-admin">
 
-<!-- CONTROL PANEL DUAL MODE -->
-<div class="control-panel">
+<div class="control-panel" id="controlPanel">
     <div class="panel-header">
-        <h2>HỆ THỐNG QUẢN LÝ SƠ ĐỒ GHẾ</h2>
+        <h2>HỆ THỐNG QUẢN LÝ SƠ ĐỒ</h2>
+        <button class="mobile-toggle-btn" id="mobileToggleBtn" onclick="toggleMobilePanel()">☰ Tùy chọn</button>
+    </div>
+
+    <div class="panel-content" id="panelContent">
         <div class="mode-switch">
-            <label>
-                <input type="radio" name="mode" value="admin" checked onchange="switchMode('admin')"> 
-                <span>🛠 Thiết Lập Giá Vé</span>
-            </label>
-            <label>
-                <input type="radio" name="mode" value="user" onchange="switchMode('user')"> 
-                <span>🛒 Khách Mua Vé</span>
-            </label>
+            <label><input type="radio" name="mode" value="admin" checked onchange="switchMode('admin')"> <span>🛠 Thiết Lập Vé</span></label>
+            <label><input type="radio" name="mode" value="user" onchange="switchMode('user')"> <span>🛒 Khách Mua Vé</span></label>
+        </div>
+
+        <!-- Admin Tools -->
+        <div id="admin-tools" class="tools-section">
+            
+            <div id="draw-status-banner" style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: #fff3cd; padding: 10px 15px; border-radius: 8px; border: 1px solid #ffe69c; gap: 10px; flex-wrap: wrap;">
+                <div style="font-size: 14px; color: #664d03;">
+                    <span id="draw-status-text">Đang <b>KHÓA</b> sơ đồ (Tránh chạm nhầm)</span>
+                </div>
+                <div class="draw-controls-group">
+                    <button id="btn-undo" onclick="undo()" class="history-btn" disabled title="Quay lại thao tác trước (Ctrl+Z)">↩️</button>
+                    <button id="btn-redo" onclick="redo()" class="history-btn" disabled title="Tiến lên thao tác sau (Ctrl+Y)">↪️</button>
+                    <button id="btn-draw-toggle" onclick="toggleDrawing()" class="draw-toggle-btn"> MỞ KHÓA VẼ</button>
+                </div>
+            </div>
+
+            <div class="palette" id="color-palette"></div>
+            
+            <div class="zone-color-tool">
+                <select id="zone-selector">
+                    <option value="ground-wing-left">Trệt - Cánh Trái</option>
+                    <option value="ground-middle">Trệt - Giữa</option>
+                    <option value="ground-wing-right">Trệt - Cánh Phải</option>
+                    <option value="ground-far-left">Trệt - VIP Rìa Trái</option>
+                    <option value="ground-far-right">Trệt - VIP Rìa Phải</option>
+                    <option value="balcony-wing-left">Lầu - Cánh Trái</option>
+                    <option value="balcony-middle">Lầu - Giữa</option>
+                    <option value="balcony-wing-right">Lầu - Cánh Phải</option>
+                    <option value="all">-- TÔ MÀU TOÀN BỘ SÂN KHẤU --</option>
+                </select>
+                <button onclick="applyColorToZone()">Áp Dụng Màu</button>
+            </div>
+            
+            <div class="tier-manager">
+                <input type="text" id="tier-name" placeholder="Tên (VD: SVIP)">
+                <input type="number" id="tier-price" placeholder="Giá (VNĐ)">
+                <input type="color" id="tier-color" value="#8b5cf6" title="Chọn màu ghế">
+                <div class="tier-actions">
+                    <button onclick="addCustomTier()" class="btn-add-tier" title="Tạo ra một loại vé mới">+ Thêm</button>
+                    <button onclick="updateCurrentTier()" class="btn-edit-tier" id="btn-update-tier" title="Lưu thông tin vừa sửa cho loại vé đang chọn">💾 Cập Nhật</button>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="export-btn" onclick="openExportModal()">💾 Lưu Code Web</button>
+                <button class="import-code-btn" onclick="openImportCodeModal()">📥 Nhập Code Web</button>
+                <button class="export-img-btn" onclick="downloadImage()">📸 Tải Ảnh Sơ Đồ</button>
+                <button class="export-excel-btn" onclick="downloadExcel()">📊 Xuất File Excel</button>
+                <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="importCSV(event)">
+                <button class="import-excel-btn" onclick="document.getElementById('csvFileInput').click()">📤 Nhập File Excel</button>
+            </div>
+        </div>
+
+        <!-- User Tools -->
+        <div id="user-tools" class="tools-section" style="display: none;">
+            <div class="legend" id="price-legend"></div>
         </div>
     </div>
+</div>
 
-    <!-- Admin Tools -->
-    <div id="admin-tools" class="tools-section">
-        <div class="palette" id="color-palette">
-            <!-- Rendered by JS -->
+<div class="cart-bar" id="cartBottomBar">
+    <div class="cart-info">Ghế đang chọn: <span id="selected-list">Chưa chọn ghế</span></div>
+    <div class="cart-total">Tổng tiền: <strong id="total-price">0 đ</strong></div>
+    <button class="btn-checkout" onclick="checkout()">Thanh Toán Ngay</button>
+</div>
+
+<!-- Modal Xuất Code -->
+<div class="modal-overlay" id="exportModal">
+    <div class="modal-box">
+        <h3>🎉 Dữ Liệu Sơ Đồ Của Bạn</h3>
+        <p>1. Copy đoạn mã dưới đây.<br>2. Lưu vào File văn bản để cất đi, hoặc gửi cho người khác.<br>3. Dùng nút <b>📥 Nhập Code Web</b> dán đoạn mã này vào để khôi phục lại sơ đồ mà không cần đụng tới mã nguồn.</p>
+        <textarea id="exportTextarea" readonly></textarea>
+        <div class="modal-actions">
+            <button onclick="copyExportText()" style="padding: 10px 20px; background: #2a9d8f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">📋 Copy Mã</button>
+            <button onclick="document.getElementById('exportModal').style.display='none'" style="padding: 10px 20px; background: #ccc; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">Đóng</button>
         </div>
-        <div class="zone-color-tool">
-            <select id="zone-selector">
-                <option value="ground-wing-left">Trệt - Cánh Trái</option>
-                <option value="ground-middle">Trệt - Giữa</option>
-                <option value="ground-wing-right">Trệt - Cánh Phải</option>
-                <option value="ground-far-left">Trệt - VIP Rìa Trái</option>
-                <option value="ground-far-right">Trệt - VIP Rìa Phải</option>
-                <option value="balcony-wing-left">Lầu - Cánh Trái</option>
-                <option value="balcony-middle">Lầu - Giữa</option>
-                <option value="balcony-wing-right">Lầu - Cánh Phải</option>
-                <option value="all">-- TÔ MÀU TOÀN BỘ SÂN KHẤU --</option>
-            </select>
-            <button onclick="applyColorToZone()">Áp Dụng Màu</button>
-        </div>
-        
-        <div class="tier-manager">
-            <input type="text" id="new-tier-name" placeholder="Tên loại vé (VD: SVIP)">
-            <input type="number" id="new-tier-price" placeholder="Giá vé (VNĐ)">
-            <input type="color" id="new-tier-color" value="#8b5cf6" title="Chọn màu ghế">
-            <button onclick="addCustomTier()">+ Thêm Loại Mới</button>
-        </div>
-        
-        <div class="hint">💡 Mẹo: Bấm giữ chuột và quét qua các ghế để tô màu nhanh!</div>
     </div>
+</div>
 
-    <!-- User Tools -->
-    <div id="user-tools" class="tools-section" style="display: none;">
-        <div class="legend" id="price-legend">
-            <!-- Rendered by JS -->
-        </div>
-        <div class="cart">
-            <div class="cart-info">Ghế đang chọn: <span id="selected-list">Chưa chọn ghế</span></div>
-            <div class="cart-total">Tổng tiền: <strong id="total-price">0 đ</strong></div>
-            <button class="btn-checkout" onclick="checkout()">Thanh Toán</button>
+<!-- Modal Nhập Code Mới -->
+<div class="modal-overlay" id="importCodeModal">
+    <div class="modal-box">
+        <h3>📥 Nhập Dữ Liệu Sơ Đồ</h3>
+        <p>Dán đoạn mã JSON (Code Web) bạn đã copy trước đó vào ô dưới đây để phục hồi lại sơ đồ:</p>
+        <textarea id="importCodeTextarea" placeholder="Dán mã JSON vào đây..."></textarea>
+        <div class="modal-actions">
+            <button onclick="applyImportedCode()" style="padding: 10px 20px; background: #2a9d8f; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">🚀 Áp Dụng Ngay</button>
+            <button onclick="document.getElementById('importCodeModal').style.display='none'" style="padding: 10px 20px; background: #ccc; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">Đóng</button>
         </div>
     </div>
 </div>
@@ -335,10 +349,7 @@
 <div class="map-wrapper">
     <div class="theater" id="theater-map">
         <div class="stage-area">Sân Khấu</div>
-        
         <div class="section-title">TẦNG TRỆT (Tổng cộng: 710 ghế)</div>
-        
-        <!-- GROUND FLOOR -->
         <div class="floor-plan">
             <div id="ground-far-left" class="column align-right"></div>
             <div id="ground-wing-left" class="column align-right"></div>
@@ -348,36 +359,47 @@
             <div id="ground-wing-right" class="column align-left"></div>
             <div id="ground-far-right" class="column align-left"></div>
         </div>
-
+        
         <div class="divider"></div>
-
-        <!-- BALCONY (TRÊN LẦU) -->
+        
         <div class="floor-plan">
+            <div id="balcony-far-left" class="column align-right" style="visibility: hidden; pointer-events: none;">
+                <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+            </div>
             <div id="balcony-wing-left" class="column align-right"></div>
             <div id="balcony-labels-left" class="column labels"></div>
             <div id="balcony-middle" class="column align-center"></div>
             <div id="balcony-labels-right" class="column labels"></div>
             <div id="balcony-wing-right" class="column align-left"></div>
+            <div id="balcony-far-right" class="column align-left" style="visibility: hidden; pointer-events: none;">
+                <div class="row"><div class="seat"></div><div class="seat"></div><div class="seat"></div><div class="seat"></div></div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 1. CẤU HÌNH DỮ LIỆU BẢNG MÀU / GIÁ VÉ ---
+    // Đã thay thế biến null bằng toàn bộ chuỗi JSON bạn cung cấp để làm dữ liệu mặc định
+    let savedMapData = {"tiers":{},"seats":{"ground-far-left_M9":"ga2","ground-far-left_M15":"ga2","ground-far-left_M7":"ga2","ground-far-left_M21":"ga2","ground-far-left_M13":"ga2","ground-far-left_M5":"ga2","ground-far-left_M27":"ga2","ground-far-left_M19":"ga2","ground-far-left_M11":"ga2","ground-far-left_M33":"ga2","ground-far-left_M25":"ga2","ground-far-left_M17":"ga2","ground-far-left_M39":"ga2","ground-far-left_M31":"ga2","ground-far-left_M23":"ga2","ground-far-left_M47":"ga2","ground-far-left_M37":"ga2","ground-far-left_M29":"ga2","ground-far-left_M55":"ga2","ground-far-left_M45":"ga2","ground-far-left_M35":"ga2","ground-far-left_M53":"ga2","ground-far-left_M43":"ga2","ground-far-left_M51":"ga2","ground-far-left_M41":"ga2","ground-far-left_M49":"ga2","ground-wing-left_A39":"vip","ground-wing-left_A37":"vip","ground-wing-left_A35":"vip","ground-wing-left_A33":"vip","ground-wing-left_A31":"vip","ground-wing-left_A29":"vvip","ground-wing-left_A27":"vvip","ground-wing-left_A25":"vvip","ground-wing-left_A23":"vvip","ground-wing-left_B41":"vip","ground-wing-left_B39":"vip","ground-wing-left_B37":"vip","ground-wing-left_B35":"vip","ground-wing-left_B33":"vip","ground-wing-left_B31":"vip","ground-wing-left_B29":"vvip","ground-wing-left_B27":"vvip","ground-wing-left_B25":"vvip","ground-wing-left_B23":"vvip","ground-wing-left_C41":"vip","ground-wing-left_C39":"vip","ground-wing-left_C37":"vip","ground-wing-left_C35":"vip","ground-wing-left_C33":"vip","ground-wing-left_C31":"vip","ground-wing-left_C29":"vvip","ground-wing-left_C27":"vvip","ground-wing-left_C25":"vvip","ground-wing-left_C23":"vvip","ground-wing-left_D43":"ga1","ground-wing-left_D41":"ga1","ground-wing-left_D39":"vip","ground-wing-left_D37":"vip","ground-wing-left_D35":"vip","ground-wing-left_D33":"vip","ground-wing-left_D31":"vip","ground-wing-left_D29":"vvip","ground-wing-left_D27":"vvip","ground-wing-left_D25":"vvip","ground-wing-left_D23":"vvip","ground-wing-left_E43":"ga1","ground-wing-left_E41":"ga1","ground-wing-left_E39":"vip","ground-wing-left_E37":"vip","ground-wing-left_E35":"vip","ground-wing-left_E33":"vip","ground-wing-left_E31":"vip","ground-wing-left_E29":"vvip","ground-wing-left_E27":"vvip","ground-wing-left_E25":"vvip","ground-wing-left_E23":"vvip","ground-wing-left_F43":"ga1","ground-wing-left_F41":"ga1","ground-wing-left_F39":"vip","ground-wing-left_F37":"vip","ground-wing-left_F35":"vip","ground-wing-left_F33":"vip","ground-wing-left_F31":"vip","ground-wing-left_F29":"vvip","ground-wing-left_F27":"vvip","ground-wing-left_F25":"vvip","ground-wing-left_F23":"vvip","ground-wing-left_G43":"ga1","ground-wing-left_G41":"ga1","ground-wing-left_G39":"vip","ground-wing-left_G37":"vip","ground-wing-left_G35":"vip","ground-wing-left_G33":"vip","ground-wing-left_G31":"vip","ground-wing-left_G29":"vip","ground-wing-left_G27":"vip","ground-wing-left_G25":"vip","ground-wing-left_G23":"vip","ground-wing-left_H43":"ga1","ground-wing-left_H41":"ga1","ground-wing-left_H39":"vip","ground-wing-left_H37":"vip","ground-wing-left_H35":"vip","ground-wing-left_H33":"vip","ground-wing-left_H31":"vip","ground-wing-left_H29":"vip","ground-wing-left_H27":"vip","ground-wing-left_H25":"vip","ground-wing-left_H23":"vip","ground-wing-left_I43":"ga1","ground-wing-left_I41":"ga1","ground-wing-left_I39":"vip","ground-wing-left_I37":"vip","ground-wing-left_I35":"vip","ground-wing-left_I33":"vip","ground-wing-left_I31":"vip","ground-wing-left_I29":"vip","ground-wing-left_I27":"vip","ground-wing-left_I25":"vip","ground-wing-left_I23":"vip","ground-wing-left_K43":"ga1","ground-wing-left_K41":"ga1","ground-wing-left_K39":"vip","ground-wing-left_K37":"vip","ground-wing-left_K35":"vip","ground-wing-left_K33":"vip","ground-wing-left_K31":"vip","ground-wing-left_K29":"vip","ground-wing-left_K27":"vip","ground-wing-left_K25":"vip","ground-wing-left_K23":"vip","ground-wing-left_L43":"ga1","ground-wing-left_L41":"ga1","ground-wing-left_L39":"vip","ground-wing-left_L37":"vip","ground-wing-left_L35":"vip","ground-wing-left_L33":"vip","ground-wing-left_L31":"vip","ground-wing-left_L29":"vip","ground-wing-left_L27":"vip","ground-wing-left_L25":"vip","ground-wing-left_L23":"vip","ground-wing-left_M45":"ga1","ground-wing-left_M43":"ga1","ground-wing-left_M41":"ga1","ground-wing-left_M39":"ga1","ground-wing-left_M37":"ga1","ground-wing-left_M35":"ga1","ground-wing-left_M33":"ga1","ground-wing-left_M31":"ga1","ground-wing-left_M29":"ga1","ground-wing-left_M27":"ga1","ground-wing-left_M25":"ga1","ground-wing-left_M23":"ga1","ground-wing-left_N45":"ga1","ground-wing-left_N43":"ga1","ground-wing-left_N41":"ga1","ground-wing-left_N39":"ga1","ground-wing-left_N37":"ga1","ground-wing-left_N35":"ga1","ground-wing-left_N33":"ga1","ground-wing-left_N31":"ga1","ground-wing-left_N29":"ga1","ground-wing-left_N27":"ga1","ground-wing-left_N25":"ga1","ground-wing-left_N23":"ga1","ground-wing-left_O43":"ga1","ground-wing-left_O41":"ga1","ground-wing-left_O39":"ga1","ground-wing-left_O37":"ga1","ground-wing-left_O35":"ga1","ground-wing-left_O33":"ga1","ground-wing-left_O31":"ga1","ground-wing-left_O29":"ga1","ground-wing-left_O27":"ga1","ground-wing-left_O25":"ga1","ground-wing-left_O23":"ga1","ground-wing-left_P39":"ga1","ground-wing-left_P37":"ga1","ground-wing-left_P35":"ga1","ground-wing-left_P33":"ga1","ground-wing-left_P31":"ga1","ground-wing-left_P29":"ga1","ground-wing-left_P27":"ga1","ground-wing-left_P25":"ga1","ground-wing-left_P23":"ga1","ground-wing-left_Q27":"ga1","ground-wing-left_Q25":"ga1","ground-wing-left_Q23":"ga1","ground-wing-left_Q21":"ga1","ground-wing-left_Q19":"ga1","ground-wing-left_Q17":"ga1","ground-wing-left_R23":"ga1","ground-wing-left_R21":"ga1","ground-wing-left_R19":"ga1","ground-wing-left_R17":"ga1","ground-middle_D21":"vvip","ground-middle_D19":"vvip","ground-middle_D17":"vvip","ground-middle_D15":"vvip","ground-middle_D13":"vvip","ground-middle_D11":"vvip","ground-middle_D9":"vvip","ground-middle_D7":"vvip","ground-middle_D5":"vvip","ground-middle_D3":"vvip","ground-middle_D1":"vvip","ground-middle_D2":"vvip","ground-middle_D4":"vvip","ground-middle_D6":"vvip","ground-middle_D8":"vvip","ground-middle_D10":"vvip","ground-middle_D12":"vvip","ground-middle_D14":"vvip","ground-middle_D16":"vvip","ground-middle_D18":"vvip","ground-middle_D20":"vvip","ground-middle_D22":"vvip","ground-middle_E21":"vvip","ground-middle_E19":"vvip","ground-middle_E17":"vvip","ground-middle_E15":"vvip","ground-middle_E13":"vvip","ground-middle_E11":"vvip","ground-middle_E9":"vvip","ground-middle_E7":"vvip","ground-middle_E5":"vvip","ground-middle_E3":"vvip","ground-middle_E1":"vvip","ground-middle_E2":"vvip","ground-middle_E4":"vvip","ground-middle_E6":"vvip","ground-middle_E8":"vvip","ground-middle_E10":"vvip","ground-middle_E12":"vvip","ground-middle_E14":"vvip","ground-middle_E16":"vvip","ground-middle_E18":"vvip","ground-middle_E20":"vvip","ground-middle_F21":"vvip","ground-middle_F19":"vvip","ground-middle_F17":"vvip","ground-middle_F15":"vvip","ground-middle_F13":"vvip","ground-middle_F11":"vvip","ground-middle_F9":"vvip","ground-middle_F7":"vvip","ground-middle_F5":"vvip","ground-middle_F3":"vvip","ground-middle_F1":"vvip","ground-middle_F2":"vvip","ground-middle_F4":"vvip","ground-middle_F6":"vvip","ground-middle_F8":"vvip","ground-middle_F10":"vvip","ground-middle_F12":"vvip","ground-middle_F14":"vvip","ground-middle_F16":"vvip","ground-middle_F18":"vvip","ground-middle_F20":"vvip","ground-middle_F22":"vvip","ground-middle_G21":"vip","ground-middle_G19":"vip","ground-middle_G17":"vip","ground-middle_G15":"vip","ground-middle_G13":"vip","ground-middle_G11":"vip","ground-middle_G9":"vip","ground-middle_G7":"vip","ground-middle_G5":"vip","ground-middle_G3":"vip","ground-middle_G1":"vip","ground-middle_G2":"vip","ground-middle_G4":"vip","ground-middle_G6":"vip","ground-middle_G8":"vip","ground-middle_G10":"vip","ground-middle_G12":"vip","ground-middle_G14":"vip","ground-middle_G16":"vip","ground-middle_G18":"vip","ground-middle_G20":"vip","ground-middle_H21":"vip","ground-middle_H19":"vip","ground-middle_H17":"vip","ground-middle_H15":"vip","ground-middle_H13":"vip","ground-middle_H11":"vip","ground-middle_H9":"vip","ground-middle_H7":"vip","ground-middle_H5":"vip","ground-middle_H3":"vip","ground-middle_H1":"vip","ground-middle_H2":"vip","ground-middle_H4":"vip","ground-middle_H6":"vip","ground-middle_H8":"vip","ground-middle_H10":"vip","ground-middle_H12":"vip","ground-middle_H14":"vip","ground-middle_H16":"vip","ground-middle_H18":"vip","ground-middle_H20":"vip","ground-middle_H22":"vip","ground-middle_I21":"vip","ground-middle_I19":"vip","ground-middle_I17":"vip","ground-middle_I15":"vip","ground-middle_I13":"vip","ground-middle_I11":"vip","ground-middle_I9":"vip","ground-middle_I7":"vip","ground-middle_I5":"vip","ground-middle_I3":"vip","ground-middle_I1":"vip","ground-middle_I2":"vip","ground-middle_I4":"vip","ground-middle_I6":"vip","ground-middle_I8":"vip","ground-middle_I10":"vip","ground-middle_I12":"vip","ground-middle_I14":"vip","ground-middle_I16":"vip","ground-middle_I18":"vip","ground-middle_I20":"vip","ground-middle_K21":"vip","ground-middle_K19":"vip","ground-middle_K17":"vip","ground-middle_K15":"vip","ground-middle_K13":"vip","ground-middle_K11":"vip","ground-middle_K9":"vip","ground-middle_K7":"vip","ground-middle_K5":"vip","ground-middle_K3":"vip","ground-middle_K1":"vip","ground-middle_K2":"vip","ground-middle_K4":"vip","ground-middle_K6":"vip","ground-middle_K8":"vip","ground-middle_K10":"vip","ground-middle_K12":"vip","ground-middle_K14":"vip","ground-middle_K16":"vip","ground-middle_K18":"vip","ground-middle_K20":"vip","ground-middle_K22":"vip","ground-middle_L21":"vip","ground-middle_L19":"vip","ground-middle_L17":"vip","ground-middle_L15":"vip","ground-middle_L13":"vip","ground-middle_L11":"vip","ground-middle_L9":"vip","ground-middle_L7":"vip","ground-middle_L5":"vip","ground-middle_L3":"vip","ground-middle_L1":"vip","ground-middle_L2":"vip","ground-middle_L4":"vip","ground-middle_L6":"vip","ground-middle_L8":"vip","ground-middle_L10":"vip","ground-middle_L12":"vip","ground-middle_L14":"vip","ground-middle_L16":"vip","ground-middle_L18":"vip","ground-middle_L20":"vip","ground-middle_M21":"vip","ground-middle_M19":"vip","ground-middle_M17":"vip","ground-middle_M15":"vip","ground-middle_M13":"vip","ground-middle_M11":"vip","ground-middle_M9":"vip","ground-middle_M7":"vip","ground-middle_M5":"vip","ground-middle_M3":"vip","ground-middle_M1":"vip","ground-middle_M2":"vip","ground-middle_M4":"vip","ground-middle_M6":"vip","ground-middle_M8":"vip","ground-middle_M10":"vip","ground-middle_M12":"vip","ground-middle_M14":"vip","ground-middle_M16":"vip","ground-middle_M18":"vip","ground-middle_M20":"vip","ground-middle_M22":"vip","ground-middle_N21":"ga1","ground-middle_N19":"ga1","ground-middle_N17":"ga1","ground-middle_N15":"ga1","ground-middle_N13":"ga1","ground-middle_N11":"ga1","ground-middle_N9":"ga1","ground-middle_N7":"ga1","ground-middle_N5":"ga1","ground-middle_N3":"ga1","ground-middle_N1":"ga1","ground-middle_N2":"ga1","ground-middle_N4":"ga1","ground-middle_N6":"ga1","ground-middle_N8":"ga1","ground-middle_N10":"ga1","ground-middle_N12":"ga1","ground-middle_N14":"ga1","ground-middle_N16":"ga1","ground-middle_N18":"ga1","ground-middle_N20":"ga1","ground-middle_O21":"ga1","ground-middle_O19":"ga1","ground-middle_O17":"ga1","ground-middle_O15":"ga1","ground-middle_O13":"ga1","ground-middle_O11":"ga1","ground-middle_O9":"ga1","ground-middle_O7":"ga1","ground-middle_O5":"ga1","ground-middle_O3":"ga1","ground-middle_O1":"ga1","ground-middle_O2":"ga1","ground-middle_O4":"ga1","ground-middle_O6":"ga1","ground-middle_O8":"ga1","ground-middle_O10":"ga1","ground-middle_O12":"ga1","ground-middle_O14":"ga1","ground-middle_O16":"ga1","ground-middle_O18":"ga1","ground-middle_O20":"ga1","ground-middle_O22":"ga1","ground-middle_P21":"ga1","ground-middle_P19":"ga1","ground-middle_P17":"ga1","ground-middle_P15":"ga1","ground-middle_P13":"ga1","ground-middle_P11":"ga1","ground-middle_P9":"ga1","ground-middle_P7":"ga1","ground-middle_P5":"ga1","ground-middle_P3":"ga1","ground-middle_P1":"ga1","ground-middle_P2":"ga1","ground-middle_P4":"ga1","ground-middle_P6":"ga1","ground-middle_P8":"ga1","ground-middle_P10":"ga1","ground-middle_P12":"ga1","ground-middle_P14":"ga1","ground-middle_P16":"ga1","ground-middle_P18":"ga1","ground-middle_P20":"ga1","ground-middle_Q15":"ga1","ground-middle_Q13":"ga1","ground-middle_Q11":"ga1","ground-middle_Q9":"ga1","ground-middle_Q7":"ga1","ground-middle_Q5":"ga1","ground-middle_Q3":"ga1","ground-middle_Q1":"ga1","ground-middle_Q2":"ga1","ground-middle_Q4":"ga1","ground-middle_Q6":"ga1","ground-middle_Q8":"ga1","ground-middle_Q10":"ga1","ground-middle_Q12":"ga1","ground-middle_Q14":"ga1","ground-middle_Q16":"ga1","ground-middle_R15":"ga1","ground-middle_R13":"ga1","ground-middle_R11":"ga1","ground-middle_R9":"ga1","ground-middle_R7":"ga1","ground-middle_R5":"ga1","ground-middle_R3":"ga1","ground-middle_R1":"ga1","ground-middle_R2":"ga1","ground-middle_R4":"ga1","ground-middle_R6":"ga1","ground-middle_R8":"ga1","ground-middle_R10":"ga1","ground-middle_R12":"ga1","ground-middle_R14":"ga1","ground-middle_S15":"ga1","ground-middle_S13":"ga1","ground-middle_S11":"ga1","ground-middle_S9":"ga1","ground-middle_S7":"ga1","ground-middle_S5":"ga1","ground-middle_S3":"ga1","ground-middle_S1":"ga1","ground-middle_S2":"ga1","ground-middle_S4":"ga1","ground-middle_S6":"ga1","ground-middle_S8":"ga1","ground-middle_S10":"ga1","ground-middle_S12":"ga1","ground-middle_S14":"ga1","ground-wing-right_A22":"vvip","ground-wing-right_A24":"vvip","ground-wing-right_A26":"vvip","ground-wing-right_A28":"vvip","ground-wing-right_A30":"vvip","ground-wing-right_A32":"vip","ground-wing-right_A34":"vip","ground-wing-right_A36":"vip","ground-wing-right_A38":"vip","ground-wing-right_B24":"vvip","ground-wing-right_B26":"vvip","ground-wing-right_B28":"vvip","ground-wing-right_B30":"vvip","ground-wing-right_B32":"vip","ground-wing-right_B34":"vip","ground-wing-right_B36":"vip","ground-wing-right_B38":"vip","ground-wing-right_B40":"vip","ground-wing-right_B42":"vip","ground-wing-right_C22":"vvip","ground-wing-right_C24":"vvip","ground-wing-right_C26":"vvip","ground-wing-right_C28":"vvip","ground-wing-right_C30":"vvip","ground-wing-right_C32":"vip","ground-wing-right_C34":"vip","ground-wing-right_C36":"vip","ground-wing-right_C38":"vip","ground-wing-right_C40":"vip","ground-wing-right_D24":"vvip","ground-wing-right_D26":"vvip","ground-wing-right_D28":"vvip","ground-wing-right_D30":"vvip","ground-wing-right_D32":"vip","ground-wing-right_D34":"vip","ground-wing-right_D36":"vip","ground-wing-right_D38":"vip","ground-wing-right_D40":"ga1","ground-wing-right_D42":"ga1","ground-wing-right_D44":"ga1","ground-wing-right_E22":"vvip","ground-wing-right_E24":"vvip","ground-wing-right_E26":"vvip","ground-wing-right_E28":"vvip","ground-wing-right_E30":"vvip","ground-wing-right_E32":"vip","ground-wing-right_E34":"vip","ground-wing-right_E36":"vip","ground-wing-right_E38":"vip","ground-wing-right_E40":"ga1","ground-wing-right_E42":"ga1","ground-wing-right_F24":"vvip","ground-wing-right_F26":"vvip","ground-wing-right_F28":"vvip","ground-wing-right_F30":"vvip","ground-wing-right_F32":"vip","ground-wing-right_F34":"vip","ground-wing-right_F36":"vip","ground-wing-right_F38":"vip","ground-wing-right_F40":"ga1","ground-wing-right_F42":"ga1","ground-wing-right_F44":"ga1","ground-wing-right_G22":"vip","ground-wing-right_G24":"vip","ground-wing-right_G26":"vip","ground-wing-right_G28":"vip","ground-wing-right_G30":"vip","ground-wing-right_G32":"vip","ground-wing-right_G34":"vip","ground-wing-right_G36":"vip","ground-wing-right_G38":"vip","ground-wing-right_G40":"ga1","ground-wing-right_G42":"ga1","ground-wing-right_H24":"vip","ground-wing-right_H26":"vip","ground-wing-right_H28":"vip","ground-wing-right_H30":"vip","ground-wing-right_H32":"vip","ground-wing-right_H34":"vip","ground-wing-right_H36":"vip","ground-wing-right_H38":"vip","ground-wing-right_H40":"ga1","ground-wing-right_H42":"ga1","ground-wing-right_H44":"ga1","ground-wing-right_I22":"vip","ground-wing-right_I24":"vip","ground-wing-right_I26":"vip","ground-wing-right_I28":"vip","ground-wing-right_I30":"vip","ground-wing-right_I32":"vip","ground-wing-right_I34":"vip","ground-wing-right_I36":"vip","ground-wing-right_I38":"vip","ground-wing-right_I40":"ga1","ground-wing-right_I42":"ga1","ground-wing-right_K24":"vip","ground-wing-right_K26":"vip","ground-wing-right_K28":"vip","ground-wing-right_K30":"vip","ground-wing-right_K32":"vip","ground-wing-right_K34":"vip","ground-wing-right_K36":"vip","ground-wing-right_K38":"vip","ground-wing-right_K40":"ga1","ground-wing-right_K42":"ga1","ground-wing-right_K44":"ga1","ground-wing-right_L22":"vip","ground-wing-right_L24":"vip","ground-wing-right_L26":"vip","ground-wing-right_L28":"vip","ground-wing-right_L30":"vip","ground-wing-right_L32":"vip","ground-wing-right_L34":"vip","ground-wing-right_L36":"vip","ground-wing-right_L38":"vip","ground-wing-right_L40":"ga1","ground-wing-right_M24":"ga1","ground-wing-right_M26":"ga1","ground-wing-right_M28":"ga1","ground-wing-right_M30":"ga1","ground-wing-right_M32":"ga1","ground-wing-right_M34":"ga1","ground-wing-right_M36":"ga1","ground-wing-right_M38":"ga1","ground-wing-right_M40":"ga1","ground-wing-right_M42":"ga1","ground-wing-right_M44":"ga1","ground-wing-right_M46":"ga1","ground-wing-right_N22":"ga1","ground-wing-right_N24":"ga1","ground-wing-right_N26":"ga1","ground-wing-right_N28":"ga1","ground-wing-right_N30":"ga1","ground-wing-right_N32":"ga1","ground-wing-right_N34":"ga1","ground-wing-right_N36":"ga1","ground-wing-right_N38":"ga1","ground-wing-right_N40":"ga1","ground-wing-right_N42":"ga1","ground-wing-right_N44":"ga1","ground-wing-right_O24":"ga1","ground-wing-right_O26":"ga1","ground-wing-right_O28":"ga1","ground-wing-right_O30":"ga1","ground-wing-right_O32":"ga1","ground-wing-right_O34":"ga1","ground-wing-right_O36":"ga1","ground-wing-right_O38":"ga1","ground-wing-right_O40":"ga1","ground-wing-right_O42":"ga1","ground-wing-right_O44":"ga1","ground-wing-right_P22":"ga1","ground-wing-right_P24":"ga1","ground-wing-right_P26":"ga1","ground-wing-right_P28":"ga1","ground-wing-right_P30":"ga1","ground-wing-right_P32":"ga1","ground-wing-right_P34":"ga1","ground-wing-right_P36":"ga1","ground-wing-right_P38":"ga1","ground-wing-right_Q20":"ga1","ground-wing-right_Q22":"ga1","ground-wing-right_Q24":"ga1","ground-wing-right_Q26":"ga1","ground-wing-right_Q28":"ga1","ground-wing-right_R16":"ga1","ground-wing-right_R18":"ga1","ground-wing-right_R20":"ga1","ground-wing-right_R22":"ga1","ground-far-right_M10":"ga2","ground-far-right_M8":"ga2","ground-far-right_M16":"ga2","ground-far-right_M6":"ga2","ground-far-right_M14":"ga2","ground-far-right_M22":"ga2","ground-far-right_M12":"ga2","ground-far-right_M20":"ga2","ground-far-right_M28":"ga2","ground-far-right_M18":"ga2","ground-far-right_M26":"ga2","ground-far-right_M34":"ga2","ground-far-right_M24":"ga2","ground-far-right_M32":"ga2","ground-far-right_M40":"ga2","ground-far-right_M30":"ga2","ground-far-right_M38":"ga2","ground-far-right_M48":"ga2","ground-far-right_M36":"ga2","ground-far-right_M46":"ga2","ground-far-right_M56":"ga2","ground-far-right_M44":"ga2","ground-far-right_M54":"ga2","ground-far-right_M42":"ga2","ground-far-right_M52":"ga2","ground-far-right_M50":"ga2","balcony-wing-left_A33":"regular","balcony-wing-left_A31":"regular","balcony-wing-left_A29":"regular","balcony-wing-left_A27":"regular","balcony-wing-left_A25":"ga2","balcony-wing-left_A23":"ga2","balcony-wing-left_A21":"ga2","balcony-wing-left_A19":"ga2","balcony-wing-left_A17":"ga2","balcony-wing-left_B35":"regular","balcony-wing-left_B33":"regular","balcony-wing-left_B31":"regular","balcony-wing-left_B29":"regular","balcony-wing-left_B27":"regular","balcony-wing-left_B25":"ga2","balcony-wing-left_B23":"ga2","balcony-wing-left_B21":"ga2","balcony-wing-left_B19":"ga2","balcony-wing-left_B17":"ga2","balcony-wing-left_C37":"regular","balcony-wing-left_C35":"regular","balcony-wing-left_C33":"regular","balcony-wing-left_C31":"regular","balcony-wing-left_C29":"regular","balcony-wing-left_C27":"regular","balcony-wing-left_C25":"ga2","balcony-wing-left_C23":"ga2","balcony-wing-left_C21":"ga2","balcony-wing-left_C19":"ga2","balcony-wing-left_C17":"ga2","balcony-wing-left_D37":"regular","balcony-wing-left_D35":"regular","balcony-wing-left_D33":"regular","balcony-wing-left_D31":"regular","balcony-wing-left_D29":"regular","balcony-wing-left_D27":"regular","balcony-wing-left_D25":"regular","balcony-wing-left_D23":"regular","balcony-wing-left_D21":"regular","balcony-wing-left_D19":"regular","balcony-wing-left_D17":"regular","balcony-wing-left_E39":"regular","balcony-wing-left_E37":"regular","balcony-wing-left_E35":"regular","balcony-wing-left_E33":"regular","balcony-wing-left_E31":"regular","balcony-wing-left_E29":"regular","balcony-wing-left_E27":"regular","balcony-wing-left_E25":"regular","balcony-wing-left_E23":"regular","balcony-wing-left_E21":"regular","balcony-wing-left_E19":"regular","balcony-wing-left_F39":"regular","balcony-wing-left_F37":"regular","balcony-wing-left_F35":"regular","balcony-wing-left_F33":"regular","balcony-wing-left_F31":"regular","balcony-wing-left_F29":"regular","balcony-wing-left_F27":"regular","balcony-wing-left_F25":"regular","balcony-wing-left_F23":"regular","balcony-wing-left_F21":"regular","balcony-wing-left_F19":"regular","balcony-wing-left_G39":"regular","balcony-wing-left_G37":"regular","balcony-wing-left_G35":"regular","balcony-wing-left_G33":"regular","balcony-wing-left_G31":"regular","balcony-wing-left_G29":"regular","balcony-wing-left_G27":"regular","balcony-wing-left_G25":"regular","balcony-wing-left_G23":"regular","balcony-wing-left_G21":"regular","balcony-wing-left_G19":"regular","balcony-wing-left_H37":"regular","balcony-wing-left_H35":"regular","balcony-wing-left_H33":"regular","balcony-wing-left_H31":"regular","balcony-wing-left_H29":"regular","balcony-wing-left_H27":"regular","balcony-wing-left_H25":"regular","balcony-wing-left_H23":"regular","balcony-wing-left_H21":"regular","balcony-wing-left_H19":"regular","balcony-wing-left_I35":"regular","balcony-wing-left_I33":"regular","balcony-wing-left_I31":"regular","balcony-wing-left_I29":"regular","balcony-wing-left_I27":"regular","balcony-wing-left_I25":"regular","balcony-wing-left_I23":"regular","balcony-wing-left_I21":"regular","balcony-wing-left_I19":"regular","balcony-wing-left_K31":"regular","balcony-wing-left_K29":"regular","balcony-wing-left_K27":"regular","balcony-wing-left_K25":"regular","balcony-wing-left_K23":"regular","balcony-wing-left_K21":"regular","balcony-wing-left_L27":"regular","balcony-wing-left_L25":"regular","balcony-wing-left_L23":"regular","balcony-wing-left_L21":"regular","balcony-middle_A15":"ga1","balcony-middle_A13":"ga1","balcony-middle_A11":"ga1","balcony-middle_A9":"ga1","balcony-middle_A7":"ga1","balcony-middle_A5":"ga1","balcony-middle_A3":"ga1","balcony-middle_A1":"ga1","balcony-middle_A2":"ga1","balcony-middle_A4":"ga1","balcony-middle_A6":"ga1","balcony-middle_A8":"ga1","balcony-middle_A10":"ga1","balcony-middle_A12":"ga1","balcony-middle_A14":"ga1","balcony-middle_B15":"ga1","balcony-middle_B13":"ga1","balcony-middle_B11":"ga1","balcony-middle_B9":"ga1","balcony-middle_B7":"ga1","balcony-middle_B5":"ga1","balcony-middle_B3":"ga1","balcony-middle_B1":"ga1","balcony-middle_B2":"ga1","balcony-middle_B4":"ga1","balcony-middle_B6":"ga1","balcony-middle_B8":"ga1","balcony-middle_B10":"ga1","balcony-middle_B12":"ga1","balcony-middle_B14":"ga1","balcony-middle_B16":"ga1","balcony-middle_C15":"ga1","balcony-middle_C13":"ga1","balcony-middle_C11":"ga1","balcony-middle_C9":"ga1","balcony-middle_C7":"ga1","balcony-middle_C5":"ga1","balcony-middle_C3":"ga1","balcony-middle_C1":"ga1","balcony-middle_C2":"ga1","balcony-middle_C4":"ga1","balcony-middle_C6":"ga1","balcony-middle_C8":"ga1","balcony-middle_C10":"ga1","balcony-middle_C12":"ga1","balcony-middle_C14":"ga1","balcony-middle_C16":"ga1","balcony-middle_D15":"ga2","balcony-middle_D13":"ga2","balcony-middle_D11":"ga2","balcony-middle_D9":"ga2","balcony-middle_D7":"ga2","balcony-middle_D5":"ga2","balcony-middle_D3":"ga2","balcony-middle_D1":"ga2","balcony-middle_D2":"ga2","balcony-middle_D4":"ga2","balcony-middle_D6":"ga2","balcony-middle_D8":"ga2","balcony-middle_D10":"ga2","balcony-middle_D12":"ga2","balcony-middle_D14":"ga2","balcony-middle_D16":"ga2","balcony-middle_E17":"ga2","balcony-middle_E15":"ga2","balcony-middle_E13":"ga2","balcony-middle_E11":"ga2","balcony-middle_E9":"ga2","balcony-middle_E7":"ga2","balcony-middle_E5":"ga2","balcony-middle_E3":"ga2","balcony-middle_E1":"ga2","balcony-middle_E2":"ga2","balcony-middle_E4":"ga2","balcony-middle_E6":"ga2","balcony-middle_E8":"ga2","balcony-middle_E10":"ga2","balcony-middle_E12":"ga2","balcony-middle_E14":"ga2","balcony-middle_E16":"ga2","balcony-middle_F17":"ga2","balcony-middle_F15":"ga2","balcony-middle_F13":"ga2","balcony-middle_F11":"ga2","balcony-middle_F9":"ga2","balcony-middle_F7":"ga2","balcony-middle_F5":"ga2","balcony-middle_F3":"ga2","balcony-middle_F1":"ga2","balcony-middle_F2":"ga2","balcony-middle_F4":"ga2","balcony-middle_F6":"ga2","balcony-middle_F8":"ga2","balcony-middle_F10":"ga2","balcony-middle_F12":"ga2","balcony-middle_F14":"ga2","balcony-middle_F16":"ga2","balcony-middle_G17":"ga2","balcony-middle_G15":"ga2","balcony-middle_G13":"ga2","balcony-middle_G11":"ga2","balcony-middle_G9":"ga2","balcony-middle_G7":"ga2","balcony-middle_G5":"ga2","balcony-middle_G3":"ga2","balcony-middle_G1":"ga2","balcony-middle_G2":"ga2","balcony-middle_G4":"ga2","balcony-middle_G6":"ga2","balcony-middle_G8":"ga2","balcony-middle_G10":"ga2","balcony-middle_G12":"ga2","balcony-middle_G14":"ga2","balcony-middle_G16":"ga2","balcony-middle_H17":"regular","balcony-middle_H15":"regular","balcony-middle_H13":"regular","balcony-middle_H11":"regular","balcony-middle_H9":"regular","balcony-middle_H7":"regular","balcony-middle_H5":"regular","balcony-middle_H3":"regular","balcony-middle_H1":"regular","balcony-middle_H2":"regular","balcony-middle_H4":"regular","balcony-middle_H6":"regular","balcony-middle_H8":"regular","balcony-middle_H10":"regular","balcony-middle_H12":"regular","balcony-middle_H14":"regular","balcony-middle_H16":"regular","balcony-middle_I17":"regular","balcony-middle_I15":"regular","balcony-middle_I13":"regular","balcony-middle_I11":"regular","balcony-middle_I9":"regular","balcony-middle_I7":"regular","balcony-middle_I5":"regular","balcony-middle_I3":"regular","balcony-middle_I1":"regular","balcony-middle_I2":"regular","balcony-middle_I4":"regular","balcony-middle_I6":"regular","balcony-middle_I8":"regular","balcony-middle_I10":"regular","balcony-middle_I12":"regular","balcony-middle_I14":"regular","balcony-middle_I16":"regular","balcony-middle_I18":"regular","balcony-middle_K19":"regular","balcony-middle_K17":"regular","balcony-middle_K15":"regular","balcony-middle_K13":"regular","balcony-middle_K11":"regular","balcony-middle_K9":"regular","balcony-middle_K7":"regular","balcony-middle_K5":"regular","balcony-middle_K3":"regular","balcony-middle_K1":"regular","balcony-middle_K2":"regular","balcony-middle_K4":"regular","balcony-middle_K6":"regular","balcony-middle_K8":"regular","balcony-middle_K10":"regular","balcony-middle_K12":"regular","balcony-middle_K14":"regular","balcony-middle_K16":"regular","balcony-middle_K18":"regular","balcony-middle_K20":"regular","balcony-middle_L19":"regular","balcony-middle_L17":"regular","balcony-middle_L15":"regular","balcony-middle_L13":"regular","balcony-middle_L11":"regular","balcony-middle_L9":"regular","balcony-middle_L7":"regular","balcony-middle_L5":"regular","balcony-middle_L3":"regular","balcony-middle_L1":"regular","balcony-middle_L2":"regular","balcony-middle_L4":"regular","balcony-middle_L6":"regular","balcony-middle_L8":"regular","balcony-middle_L10":"regular","balcony-middle_L12":"regular","balcony-middle_L14":"regular","balcony-middle_L16":"regular","balcony-middle_L18":"regular","balcony-middle_L20":"regular","balcony-wing-right_A16":"ga2","balcony-wing-right_A18":"ga2","balcony-wing-right_A20":"ga2","balcony-wing-right_A22":"ga2","balcony-wing-right_A24":"ga2","balcony-wing-right_A26":"regular","balcony-wing-right_A28":"regular","balcony-wing-right_A30":"regular","balcony-wing-right_A32":"regular","balcony-wing-right_B18":"ga2","balcony-wing-right_B20":"ga2","balcony-wing-right_B22":"ga2","balcony-wing-right_B24":"ga2","balcony-wing-right_B26":"regular","balcony-wing-right_B28":"regular","balcony-wing-right_B30":"regular","balcony-wing-right_B32":"regular","balcony-wing-right_B34":"regular","balcony-wing-right_C18":"ga2","balcony-wing-right_C20":"ga2","balcony-wing-right_C22":"ga2","balcony-wing-right_C24":"ga2","balcony-wing-right_C26":"regular","balcony-wing-right_C28":"regular","balcony-wing-right_C30":"regular","balcony-wing-right_C32":"regular","balcony-wing-right_C34":"regular","balcony-wing-right_C36":"regular","balcony-wing-right_D18":"regular","balcony-wing-right_D20":"regular","balcony-wing-right_D22":"regular","balcony-wing-right_D24":"regular","balcony-wing-right_D26":"regular","balcony-wing-right_D28":"regular","balcony-wing-right_D30":"regular","balcony-wing-right_D32":"regular","balcony-wing-right_D34":"regular","balcony-wing-right_D36":"regular","balcony-wing-right_E18":"regular","balcony-wing-right_E20":"regular","balcony-wing-right_E22":"regular","balcony-wing-right_E24":"regular","balcony-wing-right_E26":"regular","balcony-wing-right_E28":"regular","balcony-wing-right_E30":"regular","balcony-wing-right_E32":"regular","balcony-wing-right_E34":"regular","balcony-wing-right_E36":"regular","balcony-wing-right_E38":"regular","balcony-wing-right_F18":"regular","balcony-wing-right_F20":"regular","balcony-wing-right_F22":"regular","balcony-wing-right_F24":"regular","balcony-wing-right_F26":"regular","balcony-wing-right_F28":"regular","balcony-wing-right_F30":"regular","balcony-wing-right_F32":"regular","balcony-wing-right_F34":"regular","balcony-wing-right_F36":"regular","balcony-wing-right_F38":"regular","balcony-wing-right_G18":"regular","balcony-wing-right_G20":"regular","balcony-wing-right_G22":"regular","balcony-wing-right_G24":"regular","balcony-wing-right_G26":"regular","balcony-wing-right_G28":"regular","balcony-wing-right_G30":"regular","balcony-wing-right_G32":"regular","balcony-wing-right_G34":"regular","balcony-wing-right_G36":"regular","balcony-wing-right_G38":"regular","balcony-wing-right_H18":"regular","balcony-wing-right_H20":"regular","balcony-wing-right_H22":"regular","balcony-wing-right_H24":"regular","balcony-wing-right_H26":"regular","balcony-wing-right_H28":"regular","balcony-wing-right_H30":"regular","balcony-wing-right_H32":"regular","balcony-wing-right_H34":"regular","balcony-wing-right_H36":"regular","balcony-wing-right_I20":"regular","balcony-wing-right_I22":"regular","balcony-wing-right_I24":"regular","balcony-wing-right_I26":"regular","balcony-wing-right_I28":"regular","balcony-wing-right_I30":"regular","balcony-wing-right_I32":"regular","balcony-wing-right_I34":"regular","balcony-wing-right_K22":"regular","balcony-wing-right_K24":"regular","balcony-wing-right_K26":"regular","balcony-wing-right_K28":"regular","balcony-wing-right_K30":"regular","balcony-wing-right_L22":"regular","balcony-wing-right_L24":"regular","balcony-wing-right_L26":"regular"}}
+    // --- 1. CẤU HÌNH DỮ LIỆU BẢNG MÀU MẶC ĐỊNH ---
     const ticketTiers = {
-        'vvip': { name: 'VVIP', price: 5000000, color: '#e63946', bg: '#ffe3e3' },
-        'vip': { name: 'VIP', price: 3000000, color: '#d9702b', bg: '#ffeedb' },
-        'ga1': { name: 'GA 1', price: 2000000, color: '#3a7ca5', bg: '#e3f0f7' },
-        'ga2': { name: 'GA 2', price: 1000000, color: '#2a9d8f', bg: '#e0f5f2' },
-        'regular': { name: 'Thường', price: 500000, color: '#9c89b8', bg: '#f2eefa' },
+        'vvip': { name: 'VVIP', price: 5000000, color: '#e63946', bg: '#ffe3e3' }, // Đỏ
+        'vip': { name: 'VIP', price: 3000000, color: '#d9702b', bg: '#ffeedb' },   // Cam
+        'ga1': { name: 'GA 1', price: 2000000, color: '#3a7ca5', bg: '#e3f0f7' },  // Xanh dương
+        'ga2': { name: 'GA 2', price: 1000000, color: '#2a9d8f', bg: '#e0f5f2' },  // Xanh ngọc
+        'regular': { name: 'Thường', price: 500000, color: '#9c89b8', bg: '#f2eefa' }, // Tím
         'default': { name: 'Chưa Bán', price: 0, color: '#cccccc', bg: '#ffffff' }
     };
 
     let currentMode = 'admin'; 
-    let activeAdminTier = 'vip'; // Màu đang chọn cầm bút vẽ
-    let selectedSeats = new Set(); // Giỏ hàng của User
+    let activeAdminTier = 'vip';
+    let selectedSeats = new Set();
+    let isDrawingEnabled = false; 
 
-    // Sinh CSS động cho các màu ghế
+    let mapHistory = [];
+    let currentHistoryIndex = -1;
+    let strokeHasChanged = false;
+
     let dynamicStyleElement = document.createElement('style');
     document.head.appendChild(dynamicStyleElement);
 
@@ -387,28 +409,15 @@
             const t = ticketTiers[key];
             if (key === 'default') {
                 dynamicStyles += `
-                    /* Ghế Chưa Bán (Default) */
                     .seat[data-tier="default"] { background-color: #fff; border-color: #ccc; color: #ccc; }
-                    .mode-admin .seat[data-tier="default"]:hover:not(.invisible) { background-color: #f0f0f0; transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+                    .mode-admin.drawing-enabled .seat[data-tier="default"]:hover:not(.invisible) { background-color: #f0f0f0; transform: scale(1.3); z-index: 10; }
                 `;
             } else {
                 dynamicStyles += `
-                    /* Đổ màu kín ghế (Background full color) */
                     .seat[data-tier="${key}"] { background-color: ${t.color}; border-color: ${t.color}; color: #fff; }
-                    
-                    /* Admin Hover */
-                    .mode-admin .seat[data-tier="${key}"]:hover:not(.invisible) { filter: brightness(1.1); transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-                    
-                    /* User Hover */
+                    .mode-admin.drawing-enabled .seat[data-tier="${key}"]:hover:not(.invisible) { filter: brightness(1.1); transform: scale(1.3); z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
                     .mode-user .seat[data-tier="${key}"]:hover:not(.invisible) { filter: brightness(1.1); transform: scale(1.2); }
-                    
-                    /* User Đã Chọn (Selected) - Thêm viền nổi bật để nhận diện */
-                    .seat[data-tier="${key}"].selected { 
-                        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111; 
-                        transform: scale(1.2); 
-                        z-index: 20; 
-                        filter: brightness(0.9);
-                    }
+                    .seat[data-tier="${key}"].selected { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111; transform: scale(1.2); z-index: 20; filter: brightness(0.9); }
                 `;
             }
         }
@@ -416,69 +425,107 @@
     }
     updateDynamicStyles();
 
-    function addCustomTier() {
-        const nameInput = document.getElementById('new-tier-name');
-        const priceInput = document.getElementById('new-tier-price');
-        const colorInput = document.getElementById('new-tier-color');
-        
-        const name = nameInput.value.trim();
-        const price = parseInt(priceInput.value);
-        const color = colorInput.value;
-        
-        if (!name || isNaN(price) || price < 0) {
-            alert("Vui lòng nhập Tên loại vé và Giá vé hợp lệ!");
-            return;
-        }
+    function formatCurrency(num) { return new Intl.NumberFormat('vi-VN').format(num) + ' đ'; }
 
-        const key = 'custom_' + Date.now();
-        // Tạo mã màu nền nhạt (opacity 15%) từ hex color để làm màu hover
-        const bg = color + '26'; 
-        
-        ticketTiers[key] = { name, price, color, bg };
-        
-        // Reset form
-        nameInput.value = '';
-        priceInput.value = '';
-        
-        // Cập nhật giao diện
-        updateDynamicStyles();
-        initPanels();
-        
-        // Tự động chọn màu vừa tạo
-        const newSwatch = document.querySelector(`.color-swatch[data-key="${key}"]`);
-        if(newSwatch) setActiveTier(key, newSwatch);
-        
-        alert(`Đã thêm loại vé: ${name}`);
+    // --- HÀM XỬ LÝ LỊCH SỬ UNDO / REDO ---
+    function getMapState() {
+        const state = {};
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const columnEl = seat.closest('.column');
+            const zoneId = columnEl ? columnEl.id : '';
+            const uniqueKey = zoneId + '_' + seat.textContent;
+            state[uniqueKey] = seat.getAttribute('data-tier');
+        });
+        return state;
     }
 
-    // --- 2. LOGIC TẠO BẢNG ĐIỀU KHIỂN UI ---
-    function formatCurrency(num) {
-        return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+    function saveHistory() {
+        const currentState = getMapState();
+        if (currentHistoryIndex < mapHistory.length - 1) {
+            mapHistory = mapHistory.slice(0, currentHistoryIndex + 1);
+        }
+        mapHistory.push(currentState);
+        currentHistoryIndex++;
+        updateHistoryButtons();
+    }
+
+    function undo() {
+        if (currentHistoryIndex > 0) {
+            currentHistoryIndex--;
+            restoreMapState(mapHistory[currentHistoryIndex]);
+            updateHistoryButtons();
+        }
+    }
+
+    function redo() {
+        if (currentHistoryIndex < mapHistory.length - 1) {
+            currentHistoryIndex++;
+            restoreMapState(mapHistory[currentHistoryIndex]);
+            updateHistoryButtons();
+        }
+    }
+
+    function restoreMapState(state) {
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const columnEl = seat.closest('.column');
+            const zoneId = columnEl ? columnEl.id : '';
+            const uniqueKey = zoneId + '_' + seat.textContent;
+            if (state[uniqueKey]) {
+                seat.setAttribute('data-tier', state[uniqueKey]);
+                seat.classList.remove('selected');
+            }
+        });
+    }
+
+    function updateHistoryButtons() {
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+        if(btnUndo) btnUndo.disabled = currentHistoryIndex <= 0;
+        if(btnRedo) btnRedo.disabled = currentHistoryIndex >= mapHistory.length - 1;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (currentMode !== 'admin') return;
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+        if (e.ctrlKey && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+    });
+
+    // Logic Đóng / Mở khóa vẽ
+    function toggleDrawing() {
+        isDrawingEnabled = !isDrawingEnabled;
+        const btn = document.getElementById('btn-draw-toggle');
+        const banner = document.getElementById('draw-status-banner');
+        const statusText = document.getElementById('draw-status-text');
+        
+        if (isDrawingEnabled) {
+            btn.innerHTML = '🔒 KHÓA LẠI'; btn.style.background = '#e63946';
+            banner.style.background = '#d1e7dd'; banner.style.borderColor = '#badbcc';
+            statusText.innerHTML = 'Đang <b>MỞ KHÓA</b> (Bạn có thể kéo/chạm để tô màu)'; statusText.style.color = '#0f5132';
+            document.body.classList.add('drawing-enabled');
+        } else {
+            btn.innerHTML = ' MỞ KHÓA VẼ'; btn.style.background = '#333';
+            banner.style.background = '#fff3cd'; banner.style.borderColor = '#ffe69c';
+            statusText.innerHTML = 'Đang <b>KHÓA</b> sơ đồ (Tránh chạm nhầm)'; statusText.style.color = '#664d03';
+            document.body.classList.remove('drawing-enabled');
+        }
     }
 
     function initPanels() {
         const paletteContainer = document.getElementById('color-palette');
         const legendContainer = document.getElementById('price-legend');
-        
-        // Clear nội dung cũ trước khi render lại
-        paletteContainer.innerHTML = '';
-        legendContainer.innerHTML = '';
+        paletteContainer.innerHTML = ''; legendContainer.innerHTML = '';
         
         for (let key in ticketTiers) {
             const t = ticketTiers[key];
-            
-            // Build Admin Palette
             const swatch = document.createElement('div');
             swatch.className = `color-swatch ${key === activeAdminTier ? 'active' : ''}`;
-            swatch.dataset.key = key; // Lưu key để dễ select
+            swatch.dataset.key = key;
             swatch.onclick = () => setActiveTier(key, swatch);
             swatch.innerHTML = `<div class="color-box" style="background-color: ${t.color}"></div> ${t.name} (${formatCurrency(t.price)})`;
             paletteContainer.appendChild(swatch);
 
-            // Build User Legend
             if (key !== 'default') {
-                const legendItem = document.createElement('div');
-                legendItem.className = 'color-swatch';
+                const legendItem = document.createElement('div'); legendItem.className = 'color-swatch';
                 legendItem.innerHTML = `<div class="color-box" style="background-color: ${t.color}"></div> ${t.name} - ${formatCurrency(t.price)}`;
                 legendContainer.appendChild(legendItem);
             }
@@ -487,237 +534,295 @@
 
     function setActiveTier(tierKey, element) {
         activeAdminTier = tierKey;
-        document.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('#color-palette .color-swatch').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
+
+        if (tierKey !== 'default') {
+            const t = ticketTiers[tierKey];
+            document.getElementById('tier-name').value = t.name; document.getElementById('tier-price').value = t.price; document.getElementById('tier-color').value = t.color;
+            document.getElementById('btn-update-tier').style.display = 'block'; 
+        } else {
+            document.getElementById('tier-name').value = ''; document.getElementById('tier-price').value = '';
+            document.getElementById('btn-update-tier').style.display = 'none';
+        }
+
+        if(window.innerWidth <= 768 && document.getElementById('panelContent').classList.contains('show')) toggleMobilePanel();
+    }
+
+    function toggleMobilePanel() {
+        const content = document.getElementById('panelContent'); const btn = document.getElementById('mobileToggleBtn');
+        if (content.classList.contains('show')) { content.classList.remove('show'); btn.innerHTML = '☰ Tùy chọn'; btn.style.background = '#2a9d8f'; } 
+        else { content.classList.add('show'); btn.innerHTML = '✖ Đóng bảng'; btn.style.background = '#e63946'; }
     }
 
     function switchMode(mode) {
-        currentMode = mode;
-        document.body.className = `mode-${mode}`;
-        
+        currentMode = mode; document.body.className = `mode-${mode}`;
         if (mode === 'admin') {
-            document.getElementById('admin-tools').style.display = 'flex';
-            document.getElementById('user-tools').style.display = 'none';
+            document.getElementById('admin-tools').style.display = 'flex'; document.getElementById('user-tools').style.display = 'none'; document.getElementById('cartBottomBar').style.display = 'none';
         } else {
-            document.getElementById('admin-tools').style.display = 'none';
-            document.getElementById('user-tools').style.display = 'flex';
+            document.getElementById('admin-tools').style.display = 'none'; document.getElementById('user-tools').style.display = 'flex'; document.getElementById('cartBottomBar').style.display = 'flex';
+            if(window.innerWidth <= 768) { document.getElementById('panelContent').classList.remove('show'); document.getElementById('mobileToggleBtn').innerHTML = '☰ Xem giá vé'; document.getElementById('mobileToggleBtn').style.background = '#2a9d8f'; }
         }
     }
 
-
-    // --- 3. LOGIC TƯƠNG TÁC CHUỘT LÊN GHẾ ---
-    
-    // a. ADMIN: Tô màu dạng Drag (Giữ và kéo chuột)
-    let isPainting = false;
-    
-    document.addEventListener('mousedown', (e) => {
-        if (currentMode !== 'admin') return;
-        const seat = e.target.closest('.seat:not(.invisible)');
-        if (seat) {
-            isPainting = true;
-            paintSeat(seat);
-            e.preventDefault(); // Tránh bị bôi đen text khi kéo chuột
-        }
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (currentMode !== 'admin' || !isPainting) return;
-        const seat = e.target.closest('.seat:not(.invisible)');
-        if (seat) paintSeat(seat);
-    });
-
-    document.addEventListener('mouseup', () => { isPainting = false; });
-
-    // Hỗ trợ thao tác vuốt trên màn hình cảm ứng (Mobile/Tablet) để Admin tô màu
-    document.addEventListener('touchstart', (e) => {
-        if (currentMode !== 'admin') return;
-        const seat = e.target.closest('.seat:not(.invisible)');
-        if (seat) {
-            isPainting = true;
-            paintSeat(seat);
-        }
-    });
-
-    document.addEventListener('touchmove', (e) => {
-        if (currentMode !== 'admin' || !isPainting) return;
-        const touch = e.touches[0];
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (element && element.classList.contains('seat') && !element.classList.contains('invisible')) {
-            paintSeat(element);
-            e.preventDefault(); // Chặn cuộn màn hình để dễ dàng vẽ màu hơn
-        }
-    }, { passive: false });
-
-    document.addEventListener('touchend', () => { isPainting = false; });
-
-    function paintSeat(seat) {
-        seat.setAttribute('data-tier', activeAdminTier);
-        // Xoá trạng thái selected nếu Admin tô màu lại ghế đó
-        seat.classList.remove('selected');
+    function addCustomTier() {
+        const nameInput = document.getElementById('tier-name'); const priceInput = document.getElementById('tier-price'); const colorInput = document.getElementById('tier-color');
+        const name = nameInput.value.trim(); const price = parseInt(priceInput.value); const color = colorInput.value;
+        if (!name || isNaN(price) || price < 0) { alert("Vui lòng nhập Tên và Giá vé hợp lệ!"); return; }
+        const key = 'custom_' + Date.now(); ticketTiers[key] = { name, price, color, bg: color + '26' };
+        nameInput.value = ''; priceInput.value = ''; updateDynamicStyles(); initPanels();
+        const newSwatch = document.querySelector(`.color-swatch[data-key="${key}"]`); if(newSwatch) setActiveTier(key, newSwatch);
+        alert(`Đã thêm loại vé: ${name}`);
     }
 
-    // b. ADMIN: Tô màu toàn bộ Khu Vực
-    function applyColorToZone() {
-        const zoneId = document.getElementById('zone-selector').value;
-        if (zoneId === 'all') {
-            document.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat);
-        } else {
-            const container = document.getElementById(zoneId);
-            if(container) {
-                container.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat);
+    function updateCurrentTier() {
+        if (activeAdminTier === 'default') { alert("Không thể sửa hạng ghế mặc định."); return; }
+        const name = document.getElementById('tier-name').value.trim(); const price = parseInt(document.getElementById('tier-price').value); const color = document.getElementById('tier-color').value;
+        if (!name || isNaN(price) || price < 0) { alert("Vui lòng nhập hợp lệ!"); return; }
+        ticketTiers[activeAdminTier].name = name; ticketTiers[activeAdminTier].price = price; ticketTiers[activeAdminTier].color = color; ticketTiers[activeAdminTier].bg = color + '26'; 
+        updateDynamicStyles(); initPanels();
+        const updatedSwatch = document.querySelector(`.color-swatch[data-key="${activeAdminTier}"]`); if (updatedSwatch) setActiveTier(activeAdminTier, updatedSwatch);
+        updateCart(); alert(`Đã cập nhật hạng ghế: ${name}`);
+    }
+
+    // --- LOGIC XUẤT/NHẬP CẤU HÌNH VÀ EXCEL ---
+    function openExportModal() {
+        const seatData = {};
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const tier = seat.getAttribute('data-tier');
+            const columnEl = seat.closest('.column');
+            const zoneId = columnEl ? columnEl.id : '';
+            const uniqueKey = zoneId + '_' + seat.textContent;
+            if (tier !== 'default') { seatData[uniqueKey] = tier; }
+        });
+        const customTiers = {};
+        for (let key in ticketTiers) { if (key.startsWith('custom_')) customTiers[key] = ticketTiers[key]; }
+        const exportObj = { tiers: customTiers, seats: seatData };
+        document.getElementById('exportTextarea').value = JSON.stringify(exportObj);
+        document.getElementById('exportModal').style.display = 'flex';
+    }
+
+    function copyExportText() {
+        const textarea = document.getElementById('exportTextarea');
+        textarea.select(); document.execCommand('copy');
+        alert("Đã Copy thành công! Bạn có thể dán đoạn mã này vào phần Nhập Code Web lúc nào cũng được.");
+    }
+
+    function openImportCodeModal() {
+        document.getElementById('importCodeTextarea').value = '';
+        document.getElementById('importCodeModal').style.display = 'flex';
+    }
+
+    function applyImportedCode() {
+        const text = document.getElementById('importCodeTextarea').value.trim();
+        if (!text) { alert("Vui lòng dán mã code vào ô trống!"); return; }
+        try {
+            const parsedData = JSON.parse(text);
+            if (!parsedData.seats) { alert("Mã code không hợp lệ hoặc thiếu dữ liệu ghế."); return; }
+            savedMapData = parsedData; 
+            applySavedMapData(); 
+            saveHistory(); 
+            document.getElementById('importCodeModal').style.display = 'none';
+            alert("🎉 Đã phục hồi sơ đồ thành công từ đoạn mã!");
+        } catch (error) {
+            alert("Mã code không đúng định dạng. Vui lòng kiểm tra lại quá trình copy!");
+        }
+    }
+
+    function applySavedMapData() {
+        if (!savedMapData) return;
+        if (savedMapData.tiers) { Object.assign(ticketTiers, savedMapData.tiers); updateDynamicStyles(); initPanels(); }
+        if (savedMapData.seats) {
+            document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+                const columnEl = seat.closest('.column');
+                const zoneId = columnEl ? columnEl.id : '';
+                const uniqueKey = zoneId + '_' + seat.textContent;
+                
+                if (savedMapData.seats[uniqueKey]) { 
+                    seat.setAttribute('data-tier', savedMapData.seats[uniqueKey]); 
+                } else if (savedMapData.seats[seat.textContent]) {
+                    // Tương thích ngược với file JSON cũ bị lỗi trùng lặp
+                    seat.setAttribute('data-tier', savedMapData.seats[seat.textContent]);
+                } else {
+                    seat.setAttribute('data-tier', 'default');
+                }
+            });
+        }
+    }
+
+    function downloadImage() {
+        const btn = document.querySelector('.export-img-btn'); 
+        const originalText = btn.textContent; 
+        btn.textContent = '⏳ Đang tạo ảnh nét...'; 
+        
+        html2canvas(document.querySelector('.theater'), { 
+            scale: 4, 
+            backgroundColor: "#ffffff", 
+            logging: false,
+            useCORS: true 
+        }).then(canvas => {
+            btn.textContent = originalText; 
+            const link = document.createElement('a'); 
+            link.download = 'so-do-san-khau-HD.png'; 
+            link.href = canvas.toDataURL('image/png'); 
+            link.click();
+        }).catch(err => { 
+            btn.textContent = originalText; 
+            alert("Lỗi khi tạo ảnh."); 
+        });
+    }
+
+    function downloadExcel() {
+        let csvContent = "\uFEFFSố Ghế,Tầng,Khu Vực,Loại Vé,Giá Vé (VNĐ)\n";
+        const zoneNames = { 'ground-wing-left': 'Cánh Trái', 'ground-middle': 'Khu Giữa', 'ground-wing-right': 'Cánh Phải', 'ground-far-left': 'VIP Rìa Trái', 'ground-far-right': 'VIP Rìa Phải', 'balcony-wing-left': 'Cánh Trái', 'balcony-middle': 'Khu Giữa', 'balcony-wing-right': 'Cánh Phải' };
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const seatId = seat.textContent; const tierKey = seat.getAttribute('data-tier'); const tierInfo = ticketTiers[tierKey];
+            const columnEl = seat.closest('.column'); let zoneId = columnEl ? columnEl.id : ''; let floorName = zoneId.includes('balcony') ? 'Lầu' : 'Trệt'; let zoneName = zoneNames[zoneId] || 'Không xác định';
+            csvContent += `${seatId},${floorName},${zoneName},${tierInfo.name},${tierInfo.price}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url); link.setAttribute("download", "danh_sach_ghe_sankhau.csv"); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    // --- LOGIC NHẬP FILE EXCEL (CSV) VÀO SƠ ĐỒ ---
+    function importCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            processCSVData(text);
+            event.target.value = ''; 
+        };
+        reader.readAsText(file, "UTF-8");
+    }
+
+    function processCSVData(csvText) {
+        if (csvText.charCodeAt(0) === 0xFEFF) csvText = csvText.substring(1);
+
+        const lines = csvText.split('\n');
+        if (lines.length <= 1) { alert("File trống hoặc không đúng định dạng!"); return; }
+
+        const nameToKeyMap = {};
+        for (let key in ticketTiers) { nameToKeyMap[ticketTiers[key].name] = key; }
+
+        const zoneNames = { 'ground-wing-left': 'Cánh Trái', 'ground-middle': 'Khu Giữa', 'ground-wing-right': 'Cánh Phải', 'ground-far-left': 'VIP Rìa Trái', 'ground-far-right': 'VIP Rìa Phải', 'balcony-wing-left': 'Cánh Trái', 'balcony-middle': 'Khu Giữa', 'balcony-wing-right': 'Cánh Phải' };
+        const seatElementsMap = {};
+        
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const columnEl = seat.closest('.column'); 
+            const zoneId = columnEl ? columnEl.id : ''; 
+            const zoneName = zoneNames[zoneId] || 'Không xác định';
+            const uniqueKey = zoneName + '_' + seat.textContent;
+            seatElementsMap[uniqueKey] = seat;
+        });
+
+        let updateCount = 0;
+        let strokeHasChangedTemp = false;
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const cols = line.split(',');
+            if (cols.length >= 4) {
+                const seatId = cols[0].trim();
+                const zoneName = cols[2].trim();
+                const tierName = cols[3].trim();
+                
+                const tierKey = nameToKeyMap[tierName] || 'default';
+                const uniqueKey = zoneName + '_' + seatId;
+
+                const targetSeat = seatElementsMap[uniqueKey];
+                if (targetSeat && targetSeat.getAttribute('data-tier') !== tierKey) {
+                    targetSeat.setAttribute('data-tier', tierKey);
+                    updateCount++;
+                    strokeHasChangedTemp = true;
+                }
             }
         }
+
+        if (updateCount > 0) {
+            if (strokeHasChangedTemp) saveHistory(); 
+            alert(`🎉 Đã áp dụng thành công!\nSơ đồ vừa tự động cập nhật màu cho ${updateCount} ghế theo dữ liệu từ file Excel.`);
+        } else {
+            alert("Không có thay đổi nào mới hoặc sơ đồ đã khớp 100% với file Excel.");
+        }
     }
 
-    // c. USER: Click chọn ghế đưa vào giỏ hàng
+    // --- TƯƠNG TÁC CHUỘT/TOUCH ĐÃ ĐƯỢC BẢO VỆ BỞI isDrawingEnabled ---
+    let isPainting = false;
+    document.addEventListener('mousedown', (e) => { if (currentMode !== 'admin' || !isDrawingEnabled) return; const seat = e.target.closest('.seat:not(.invisible)'); if (seat) { strokeHasChanged = false; isPainting = true; paintSeat(seat); e.preventDefault(); } });
+    document.addEventListener('mousemove', (e) => { if (currentMode !== 'admin' || !isPainting || !isDrawingEnabled) return; const seat = e.target.closest('.seat:not(.invisible)'); if (seat) paintSeat(seat); });
+    document.addEventListener('mouseup', () => { if (isPainting && strokeHasChanged) { saveHistory(); } isPainting = false; });
+    document.addEventListener('touchstart', (e) => { if (currentMode !== 'admin' || !isDrawingEnabled) return; const seat = e.target.closest('.seat:not(.invisible)'); if (seat) { strokeHasChanged = false; isPainting = true; paintSeat(seat); } });
+    document.addEventListener('touchmove', (e) => { if (currentMode !== 'admin' || !isPainting || !isDrawingEnabled) return; const touch = e.touches[0]; const el = document.elementFromPoint(touch.clientX, touch.clientY); if (el && el.classList.contains('seat') && !el.classList.contains('invisible')) { paintSeat(el); e.preventDefault(); } }, { passive: false });
+    document.addEventListener('touchend', () => { if (isPainting && strokeHasChanged) { saveHistory(); } isPainting = false; });
+
+    function paintSeat(seat) { 
+        const currentTier = seat.getAttribute('data-tier');
+        if (currentTier !== activeAdminTier) {
+            seat.setAttribute('data-tier', activeAdminTier); 
+            seat.classList.remove('selected'); 
+            strokeHasChanged = true;
+        }
+    }
+    
+    function applyColorToZone() { 
+        if (!isDrawingEnabled) { alert("Vui lòng Bấm nút MỞ KHÓA màu đỏ phía trên trước khi thao tác!"); return; }
+        strokeHasChanged = false;
+        const zoneId = document.getElementById('zone-selector').value; 
+        if (zoneId === 'all') { document.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat); } 
+        else { document.getElementById(zoneId)?.querySelectorAll('.seat:not(.invisible)').forEach(paintSeat); } 
+        if (strokeHasChanged) saveHistory();
+    }
+
     document.addEventListener('click', (e) => {
         if (currentMode !== 'user') return;
-        
-        const seat = e.target.closest('.seat:not(.invisible)');
-        if (!seat) return;
-
-        const tier = seat.getAttribute('data-tier');
-        if (tier === 'default') return; // Không cho click ghế Chưa Bán
-
+        const seat = e.target.closest('.seat:not(.invisible)'); if (!seat) return;
+        if (seat.getAttribute('data-tier') === 'default') return; 
         const seatId = seat.textContent;
-
-        if (selectedSeats.has(seatId)) {
-            selectedSeats.delete(seatId);
-            seat.classList.remove('selected');
-        } else {
-            selectedSeats.add(seatId);
-            seat.classList.add('selected');
-        }
-
+        if (selectedSeats.has(seatId)) { selectedSeats.delete(seatId); seat.classList.remove('selected'); } else { selectedSeats.add(seatId); seat.classList.add('selected'); }
         updateCart();
     });
 
     function updateCart() {
-        const listSpan = document.getElementById('selected-list');
-        const totalSpan = document.getElementById('total-price');
-        
-        if (selectedSeats.size === 0) {
-            listSpan.textContent = 'Chưa chọn ghế';
-            totalSpan.textContent = '0 đ';
-            return;
-        }
-
-        let total = 0;
-        let listArr = Array.from(selectedSeats);
-        listArr.sort(); // Sort tên ghế cho đẹp
-
-        listArr.forEach(seatId => {
-            // Tìm ghế trong DOM để lấy giá tương ứng
-            // Do content là tên ghế, ta tìm ngược lại. Mẹo nhanh: duyệt qua danh sách selected
-        });
-
-        // Tính tổng tiền chuẩn xác nhất dựa trên element
-        document.querySelectorAll('.seat.selected').forEach(seat => {
-            const tierKey = seat.getAttribute('data-tier');
-            total += ticketTiers[tierKey].price;
-        });
-
-        listSpan.textContent = listArr.join(', ');
-        totalSpan.textContent = formatCurrency(total);
+        const listSpan = document.getElementById('selected-list'); const totalSpan = document.getElementById('total-price');
+        if (selectedSeats.size === 0) { listSpan.textContent = 'Chưa chọn ghế'; totalSpan.textContent = '0 đ'; return; }
+        let total = 0; let listArr = Array.from(selectedSeats); listArr.sort();
+        document.querySelectorAll('.seat.selected').forEach(seat => { total += ticketTiers[seat.getAttribute('data-tier')].price; });
+        listSpan.textContent = listArr.join(', '); totalSpan.textContent = formatCurrency(total);
     }
+    function checkout() { if(selectedSeats.size === 0) { alert('Vui lòng chọn ít nhất 1 ghế!'); return; } alert(`CHUYỂN HƯỚNG THANH TOÁN\n\nGhế: ${Array.from(selectedSeats).join(', ')}\nTổng: ${document.getElementById('total-price').textContent}`); }
 
-    function checkout() {
-        if(selectedSeats.size === 0) {
-            alert('Vui lòng chọn ít nhất 1 ghế trước khi thanh toán!');
-            return;
-        }
-        alert(`Đang chuyển hướng thanh toán...\nGhế: ${Array.from(selectedSeats).join(', ')}\nTổng: ${document.getElementById('total-price').textContent}`);
-    }
-
-
-    // --- 4. HỆ THỐNG RENDER SƠ ĐỒ GHẾ GỐC ---
-    // (Giữ nguyên thuật toán lưới để đảm bảo thẳng cột như yêu cầu trước)
+    // --- HỆ THỐNG RENDER MAP ---
     function genOdd(start, end) { let arr = []; for (let i = start; i >= end; i -= 2) arr.push(i); return arr; }
     function genEven(start, end) { let arr = []; for (let i = start; i <= end; i += 2) arr.push(i); return arr; }
     function genOddCols(start, end, maxLeft, minRight) { let arr = []; for (let i = maxLeft; i >= minRight; i -= 2) { if (i <= start && i >= end) arr.push(i); else arr.push(0); } return arr; }
     function genEvenCols(start, end, minLeft, maxRight) { let arr = []; for (let i = minLeft; i <= maxRight; i += 2) { if (i >= start && i <= end) arr.push(i); else arr.push(0); } return arr; }
 
     const groundLabels = ['A','B','C','D','E','F','G','H','I','K','L', 'gap', 'M','N','O','P','Q','R','S'];
-    const groundLeftWing = [
-        { r: 'A', seats: genOddCols(39, 23, 45, 17) }, { r: 'B', seats: genOddCols(41, 23, 45, 17) }, { r: 'C', seats: genOddCols(41, 23, 45, 17) },
-        { r: 'D', seats: genOddCols(43, 23, 45, 17) }, { r: 'E', seats: genOddCols(43, 23, 45, 17) }, { r: 'F', seats: genOddCols(43, 23, 45, 17) },
-        { r: 'G', seats: genOddCols(43, 23, 45, 17) }, { r: 'H', seats: genOddCols(43, 23, 45, 17) }, { r: 'I', seats: genOddCols(43, 23, 45, 17) },
-        { r: 'K', seats: genOddCols(43, 23, 45, 17) }, { r: 'L', seats: genOddCols(43, 23, 45, 17) }, { r: 'gap' },
-        { r: 'M', seats: genOddCols(45, 23, 45, 17) }, { r: 'N', seats: genOddCols(45, 23, 45, 17) }, { r: 'O', seats: genOddCols(43, 23, 45, 17) },
-        { r: 'P', seats: genOddCols(39, 23, 45, 17) }, { r: 'Q', seats: genOddCols(27, 17, 45, 17) }, { r: 'R', seats: genOddCols(23, 17, 45, 17) }
-    ];
-    const groundMiddle = [
-        { r: 'A', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'B', left: genOdd(21, 1), right: genEven(2, 22) },
-        { r: 'C', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'D', left: genOdd(21, 1), right: genEven(2, 22) },
-        { r: 'E', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'F', left: genOdd(21, 1), right: genEven(2, 22) },
-        { r: 'G', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'H', left: genOdd(21, 1), right: genEven(2, 22) },
-        { r: 'I', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'K', left: genOdd(21, 1), right: genEven(2, 22) },
-        { r: 'L', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'gap' },
-        { r: 'M', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'N', left: genOdd(21, 1), right: genEven(2, 20) },
-        { r: 'O', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'P', left: genOdd(21, 1), right: genEven(2, 20) },
-        { r: 'Q', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'R', left: genOdd(15, 1), right: genEven(2, 14) },
-        { r: 'S', left: genOdd(15, 1), right: genEven(2, 14) }
-    ];
-    const groundRightWing = [
-        { r: 'A', seats: genEvenCols(22, 38, 16, 46) }, { r: 'B', seats: genEvenCols(24, 42, 16, 46) }, { r: 'C', seats: genEvenCols(22, 40, 16, 46) },
-        { r: 'D', seats: genEvenCols(24, 44, 16, 46) }, { r: 'E', seats: genEvenCols(22, 42, 16, 46) }, { r: 'F', seats: genEvenCols(24, 44, 16, 46) },
-        { r: 'G', seats: genEvenCols(22, 42, 16, 46) }, { r: 'H', seats: genEvenCols(24, 44, 16, 46) }, { r: 'I', seats: genEvenCols(22, 42, 16, 46) },
-        { r: 'K', seats: genEvenCols(24, 44, 16, 46) }, { r: 'L', seats: genEvenCols(22, 40, 16, 46) }, { r: 'gap' },
-        { r: 'M', seats: genEvenCols(24, 46, 16, 46) }, { r: 'N', seats: genEvenCols(22, 44, 16, 46) }, { r: 'O', seats: genEvenCols(24, 44, 16, 46) },
-        { r: 'P', seats: genEvenCols(22, 38, 16, 46) }, { r: 'Q', seats: genEvenCols(20, 28, 16, 46) }, { r: 'R', seats: genEvenCols(16, 22, 16, 46) }
-    ];
-    const farLeftBoxes = [
-        { r: 'M', seats: [0, 0, 0, 9] }, { r: 'M', seats: [0, 0, 15, 7] }, { r: 'M', seats: [0, 21, 13, 5] },
-        { r: 'M', seats: [0, 27, 19, 11] }, { r: 'M', seats: [0, 33, 25, 17] }, { r: 'M', seats: [0, 39, 31, 23] },
-        { r: 'M', seats: [47, 37, 29, 0] }, { r: 'M', seats: [55, 45, 35, 0] }, { r: 'M', seats: [0, 53, 43, 0] },
-        { r: 'M', seats: [0, 0, 51, 41] }, { r: 'M', seats: [0, 0, 0, 49] }   
-    ];
-    const farRightBoxes = [
-        { r: 'M', seats: [10, 0, 0, 0] }, { r: 'M', seats: [8, 16, 0, 0] }, { r: 'M', seats: [6, 14, 22, 0] },
-        { r: 'M', seats: [12, 20, 28, 0] }, { r: 'M', seats: [18, 26, 34, 0] }, { r: 'M', seats: [24, 32, 40, 0] },
-        { r: 'M', seats: [0, 30, 38, 48] }, { r: 'M', seats: [0, 36, 46, 56] }, { r: 'M', seats: [0, 44, 54, 0] },
-        { r: 'M', seats: [42, 52, 0, 0] }, { r: 'M', seats: [50, 0, 0, 0] }   
-    ];
-
+    const groundLeftWing = [ { r: 'A', seats: genOddCols(39, 23, 45, 17) }, { r: 'B', seats: genOddCols(41, 23, 45, 17) }, { r: 'C', seats: genOddCols(41, 23, 45, 17) }, { r: 'D', seats: genOddCols(43, 23, 45, 17) }, { r: 'E', seats: genOddCols(43, 23, 45, 17) }, { r: 'F', seats: genOddCols(43, 23, 45, 17) }, { r: 'G', seats: genOddCols(43, 23, 45, 17) }, { r: 'H', seats: genOddCols(43, 23, 45, 17) }, { r: 'I', seats: genOddCols(43, 23, 45, 17) }, { r: 'K', seats: genOddCols(43, 23, 45, 17) }, { r: 'L', seats: genOddCols(43, 23, 45, 17) }, { r: 'gap' }, { r: 'M', seats: genOddCols(45, 23, 45, 17) }, { r: 'N', seats: genOddCols(45, 23, 45, 17) }, { r: 'O', seats: genOddCols(43, 23, 45, 17) }, { r: 'P', seats: genOddCols(39, 23, 45, 17) }, { r: 'Q', seats: genOddCols(27, 17, 45, 17) }, { r: 'R', seats: genOddCols(23, 17, 45, 17) } ];
+    const groundMiddle = [ { r: 'A', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'B', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'C', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'D', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'E', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'F', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'G', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'H', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'I', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'K', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'L', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'gap' }, { r: 'M', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'N', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'O', left: genOdd(21, 1), right: genEven(2, 22) }, { r: 'P', left: genOdd(21, 1), right: genEven(2, 20) }, { r: 'Q', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'R', left: genOdd(15, 1), right: genEven(2, 14) }, { r: 'S', left: genOdd(15, 1), right: genEven(2, 14) } ];
+    const groundRightWing = [ { r: 'A', seats: genEvenCols(22, 38, 16, 46) }, { r: 'B', seats: genEvenCols(24, 42, 16, 46) }, { r: 'C', seats: genEvenCols(22, 40, 16, 46) }, { r: 'D', seats: genEvenCols(24, 44, 16, 46) }, { r: 'E', seats: genEvenCols(22, 42, 16, 46) }, { r: 'F', seats: genEvenCols(24, 44, 16, 46) }, { r: 'G', seats: genEvenCols(22, 42, 16, 46) }, { r: 'H', seats: genEvenCols(24, 44, 16, 46) }, { r: 'I', seats: genEvenCols(22, 42, 16, 46) }, { r: 'K', seats: genEvenCols(24, 44, 16, 46) }, { r: 'L', seats: genEvenCols(22, 40, 16, 46) }, { r: 'gap' }, { r: 'M', seats: genEvenCols(24, 46, 16, 46) }, { r: 'N', seats: genEvenCols(22, 44, 16, 46) }, { r: 'O', seats: genEvenCols(24, 44, 16, 46) }, { r: 'P', seats: genEvenCols(22, 38, 16, 46) }, { r: 'Q', seats: genEvenCols(20, 28, 16, 46) }, { r: 'R', seats: genEvenCols(16, 22, 16, 46) } ];
+    const farLeftBoxes = [ { r: 'M', seats: [0, 0, 0, 9] }, { r: 'M', seats: [0, 0, 15, 7] }, { r: 'M', seats: [0, 21, 13, 5] }, { r: 'M', seats: [0, 27, 19, 11] }, { r: 'M', seats: [0, 33, 25, 17] }, { r: 'M', seats: [0, 39, 31, 23] }, { r: 'M', seats: [47, 37, 29, 0] }, { r: 'M', seats: [55, 45, 35, 0] }, { r: 'M', seats: [0, 53, 43, 0] }, { r: 'M', seats: [0, 0, 51, 41] }, { r: 'M', seats: [0, 0, 0, 49] } ];
+    const farRightBoxes = [ { r: 'M', seats: [10, 0, 0, 0] }, { r: 'M', seats: [8, 16, 0, 0] }, { r: 'M', seats: [6, 14, 22, 0] }, { r: 'M', seats: [12, 20, 28, 0] }, { r: 'M', seats: [18, 26, 34, 0] }, { r: 'M', seats: [24, 32, 40, 0] }, { r: 'M', seats: [0, 30, 38, 48] }, { r: 'M', seats: [0, 36, 46, 56] }, { r: 'M', seats: [0, 44, 54, 0] }, { r: 'M', seats: [42, 52, 0, 0] }, { r: 'M', seats: [50, 0, 0, 0] } ];
+    
     const balconyLabels = ['A','B','C','D','E','F','G','H','I','K','L'];
-    const balconyLeftWing = [
-        { r: 'A', seats: genOddCols(33, 17, 39, 17) }, { r: 'B', seats: genOddCols(35, 17, 39, 17) }, { r: 'C', seats: genOddCols(37, 17, 39, 17) },
-        { r: 'D', seats: genOddCols(37, 17, 39, 17) }, { r: 'E', seats: genOddCols(39, 19, 39, 17) }, { r: 'F', seats: genOddCols(39, 19, 39, 17) },
-        { r: 'G', seats: genOddCols(39, 19, 39, 17) }, { r: 'H', seats: genOddCols(37, 19, 39, 17) }, { r: 'I', seats: genOddCols(35, 19, 39, 17) },
-        { r: 'K', seats: genOddCols(31, 21, 39, 17) }, { r: 'L', seats: genOddCols(27, 21, 39, 17) }
-    ];
-    const balconyMiddle = [
-        { r: 'A', left: genOdd(15, 1), right: genEven(2, 14) }, { r: 'B', left: genOdd(15, 1), right: genEven(2, 16) },
-        { r: 'C', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'D', left: genOdd(15, 1), right: genEven(2, 16) },
-        { r: 'E', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'F', left: genOdd(17, 1), right: genEven(2, 16) },
-        { r: 'G', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'H', left: genOdd(17, 1), right: genEven(2, 16) },
-        { r: 'I', left: genOdd(17, 1), right: genEven(2, 18) }, { r: 'K', left: genOdd(19, 1), right: genEven(2, 20) },
-        { r: 'L', left: genOdd(19, 1), right: genEven(2, 20) }
-    ];
-    const balconyRightWing = [
-        { r: 'A', seats: genEvenCols(16, 32, 16, 38) }, { r: 'B', seats: genEvenCols(18, 34, 16, 38) }, { r: 'C', seats: genEvenCols(18, 36, 16, 38) },
-        { r: 'D', seats: genEvenCols(18, 36, 16, 38) }, { r: 'E', seats: genEvenCols(18, 38, 16, 38) }, { r: 'F', seats: genEvenCols(18, 38, 16, 38) },
-        { r: 'G', seats: genEvenCols(18, 38, 16, 38) }, { r: 'H', seats: genEvenCols(18, 36, 16, 38) }, { r: 'I', seats: genEvenCols(20, 34, 16, 38) },
-        { r: 'K', seats: genEvenCols(22, 30, 16, 38) }, { r: 'L', seats: genEvenCols(22, 26, 16, 38) }
-    ];
+    const balconyLeftWing = [ { r: 'A', seats: genOddCols(33, 17, 45, 17) }, { r: 'B', seats: genOddCols(35, 17, 45, 17) }, { r: 'C', seats: genOddCols(37, 17, 45, 17) }, { r: 'D', seats: genOddCols(37, 17, 45, 17) }, { r: 'E', seats: genOddCols(39, 19, 45, 17) }, { r: 'F', seats: genOddCols(39, 19, 45, 17) }, { r: 'G', seats: genOddCols(39, 19, 45, 17) }, { r: 'H', seats: genOddCols(37, 19, 45, 17) }, { r: 'I', seats: genOddCols(35, 19, 45, 17) }, { r: 'K', seats: genOddCols(31, 21, 45, 17) }, { r: 'L', seats: genOddCols(27, 21, 45, 17) } ];
+    const balconyMiddle = [ { r: 'A', left: genOdd(15, 1), right: genEven(2, 14) }, { r: 'B', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'C', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'D', left: genOdd(15, 1), right: genEven(2, 16) }, { r: 'E', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'F', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'G', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'H', left: genOdd(17, 1), right: genEven(2, 16) }, { r: 'I', left: genOdd(17, 1), right: genEven(2, 18) }, { r: 'K', left: genOdd(19, 1), right: genEven(2, 20) }, { r: 'L', left: genOdd(19, 1), right: genEven(2, 20) } ];
+    const balconyRightWing = [ { r: 'A', seats: genEvenCols(16, 32, 16, 46) }, { r: 'B', seats: genEvenCols(18, 34, 16, 46) }, { r: 'C', seats: genEvenCols(18, 36, 16, 46) }, { r: 'D', seats: genEvenCols(18, 36, 16, 46) }, { r: 'E', seats: genEvenCols(18, 38, 16, 46) }, { r: 'F', seats: genEvenCols(18, 38, 16, 46) }, { r: 'G', seats: genEvenCols(18, 38, 16, 46) }, { r: 'H', seats: genEvenCols(18, 36, 16, 46) }, { r: 'I', seats: genEvenCols(20, 34, 16, 46) }, { r: 'K', seats: genEvenCols(22, 30, 16, 46) }, { r: 'L', seats: genEvenCols(22, 26, 16, 46) } ];
 
-    // Render logic - Truyền Tier thay vì Class cứng
     function renderWing(containerId, data, initialTier) {
         const container = document.getElementById(containerId);
         data.forEach(rowData => {
-            if (rowData.r === 'gap') {
-                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
-            }
+            if (rowData.r === 'gap') { const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return; }
             const rowDiv = document.createElement('div'); rowDiv.className = 'row';
             rowData.seats.forEach(num => {
                 const seat = document.createElement('div');
                 if (num === 0) { seat.className = `seat invisible`; } 
-                else {
-                    seat.className = `seat`;
-                    seat.setAttribute('data-tier', initialTier);
-                    seat.textContent = `${rowData.r}${num}`;
-                    seat.title = `Ghế ${rowData.r}${num}`;
-                }
+                else { seat.className = `seat`; seat.setAttribute('data-tier', initialTier); seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; }
                 rowDiv.appendChild(seat);
             });
             container.appendChild(rowDiv);
@@ -727,25 +832,13 @@
     function renderMiddle(containerId, data, initialTier) {
         const container = document.getElementById(containerId);
         data.forEach(rowData => {
-            if (rowData.r === 'gap') {
-                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
-            }
+            if (rowData.r === 'gap') { const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return; }
             const rowDiv = document.createElement('div'); rowDiv.className = 'row middle-row'; 
-            
             const leftHalf = document.createElement('div'); leftHalf.className = 'half left-half';
-            rowData.left.forEach(num => {
-                const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier);
-                seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; leftHalf.appendChild(seat);
-            });
-
+            rowData.left.forEach(num => { const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier); seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; leftHalf.appendChild(seat); });
             const centerAisle = document.createElement('div'); centerAisle.className = 'center-aisle';
-
             const rightHalf = document.createElement('div'); rightHalf.className = 'half right-half';
-            rowData.right.forEach(num => {
-                const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier);
-                seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; rightHalf.appendChild(seat);
-            });
-            
+            rowData.right.forEach(num => { const seat = document.createElement('div'); seat.className = `seat`; seat.setAttribute('data-tier', initialTier); seat.textContent = `${rowData.r}${num}`; seat.title = `Ghế ${rowData.r}${num}`; rightHalf.appendChild(seat); });
             rowDiv.appendChild(leftHalf); rowDiv.appendChild(centerAisle); rowDiv.appendChild(rightHalf); container.appendChild(rowDiv);
         });
     }
@@ -753,31 +846,66 @@
     function renderLabels(containerId, labels) {
         const container = document.getElementById(containerId);
         labels.forEach(char => {
-            if (char === 'gap') {
-                const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return;
-            }
-            const label = document.createElement('div'); label.className = 'label-char';
-            label.innerHTML = `<strong>${char}</strong>`; container.appendChild(label);
+            if (char === 'gap') { const gapDiv = document.createElement('div'); gapDiv.className = 'gap-top-large'; container.appendChild(gapDiv); return; }
+            const label = document.createElement('div'); label.className = 'label-char'; label.innerHTML = `<strong>${char}</strong>`; container.appendChild(label);
         });
     }
 
-    // Khởi tạo App
+    // --- HÀM TỰ ĐỘNG QUÉT VÀ TÔ MÀU (THUẬT TOÁN THAY THẾ CHO AI DÙNG SẴN) ---
+    function applyDetailedDefaultColors() {
+        document.querySelectorAll('.seat:not(.invisible)').forEach(seat => {
+            const id = seat.textContent; 
+            const row = id.charAt(0);
+            const zone = seat.closest('.column').id;
+            let tier = 'default';
+
+            if (zone.includes('ground-middle')) {
+                if (['A','B','C','D'].includes(row)) tier = 'vvip';
+                else if (['E','F','G','H'].includes(row)) tier = 'vip';
+                else if (['I','K','L'].includes(row)) tier = 'ga1';
+                else tier = 'ga2';
+            } else if (zone.includes('ground-wing')) {
+                if (['A','B','C','D'].includes(row)) tier = 'vip';
+                else if (['E','F','G','H','I','K','L'].includes(row)) tier = 'ga1';
+                else tier = 'ga2';
+            } else if (zone.includes('ground-far')) {
+                tier = 'vip'; 
+            } else if (zone.includes('balcony-middle')) {
+                if (['A','B','C'].includes(row)) tier = 'ga1';
+                else if (['D','E','F','G'].includes(row)) tier = 'ga2';
+                else tier = 'regular';
+            } else if (zone.includes('balcony-wing')) {
+                if (['A','B','C','D'].includes(row)) tier = 'ga2';
+                else tier = 'regular';
+            }
+
+            seat.setAttribute('data-tier', tier);
+        });
+    }
+
+    // 1. Khởi tạo menu & giao diện UI
     initPanels();
     
-    // Khởi tạo ghế với một vài màu mặc định để làm mẫu
-    renderLabels('ground-labels-left', groundLabels);
-    renderLabels('ground-labels-right', groundLabels);
-    renderWing('ground-wing-left', groundLeftWing, 'vip');
-    renderMiddle('ground-middle', groundMiddle, 'ga1');
-    renderWing('ground-wing-right', groundRightWing, 'vip');
-    renderWing('ground-far-left', farLeftBoxes, 'ga2');
-    renderWing('ground-far-right', farRightBoxes, 'ga2');
+    // 2. Render bản đồ toàn bộ là Chưa Bán ('default') để giữ khung chuẩn
+    renderLabels('ground-labels-left', groundLabels); renderLabels('ground-labels-right', groundLabels);
+    renderWing('ground-wing-left', groundLeftWing, 'default'); renderMiddle('ground-middle', groundMiddle, 'default'); renderWing('ground-wing-right', groundRightWing, 'default');
+    renderWing('ground-far-left', farLeftBoxes, 'default'); renderWing('ground-far-right', farRightBoxes, 'default');
+    renderLabels('balcony-labels-left', balconyLabels); renderLabels('balcony-labels-right', balconyLabels);
+    renderWing('balcony-wing-left', balconyLeftWing, 'default'); renderMiddle('balcony-middle', balconyMiddle, 'default'); renderWing('balcony-wing-right', balconyRightWing, 'default');
 
-    renderLabels('balcony-labels-left', balconyLabels);
-    renderLabels('balcony-labels-right', balconyLabels);
-    renderWing('balcony-wing-left', balconyLeftWing, 'regular');
-    renderMiddle('balcony-middle', balconyMiddle, 'regular');
-    renderWing('balcony-wing-right', balconyRightWing, 'regular');
+    // 3. Kiểm tra xem có dữ liệu đã lưu (savedMapData) không
+    if (savedMapData && savedMapData.seats && Object.keys(savedMapData.seats).length > 0) {
+        // Nếu có dữ liệu lưu -> Ưu tiên 100% (bỏ qua thuật toán tự động, những ghế ko có trong JSON sẽ trắng)
+        applySavedMapData();
+    } else {
+        // Nếu không có dữ liệu lưu -> Dùng thuật toán tự động tô màu theo ảnh gốc
+        applyDetailedDefaultColors();
+    }
+
+    // 4. Mặc định chọn ô VIP và Lưu trạng thái số 0 cho Lịch sử
+    const initialSwatch = document.querySelector(`.color-swatch[data-key="vip"]`);
+    if(initialSwatch) setActiveTier('vip', initialSwatch);
+    saveHistory();
 
 </script>
 </body>
